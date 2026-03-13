@@ -48,14 +48,15 @@ function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB')
 
             <!-- Table -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th class="text-left px-4 py-3 font-medium text-gray-600">Quote #</th>
                             <th class="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
-                            <th class="text-left px-4 py-3 font-medium text-gray-600">Vehicle</th>
-                            <th class="text-left px-4 py-3 font-medium text-gray-600">Date</th>
-                            <th class="text-left px-4 py-3 font-medium text-gray-600">Valid Until</th>
+                            <th class="hidden sm:table-cell text-left px-4 py-3 font-medium text-gray-600">Vehicle</th>
+                            <th class="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                            <th class="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600">Valid Until</th>
                             <th class="text-right px-4 py-3 font-medium text-gray-600">Total</th>
                             <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                             <th class="px-4 py-3"></th>
@@ -68,9 +69,9 @@ function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB')
                         <tr v-for="q in quotes.data" :key="q.id" class="hover:bg-gray-50">
                             <td class="px-4 py-3 font-mono font-medium text-electric-600">{{ q.quote_number }}</td>
                             <td class="px-4 py-3 text-gray-900">{{ q.customer?.name }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ q.vehicle?.registration_number || '-' }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ fmtDate(q.quote_date) }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ fmtDate(q.valid_until) }}</td>
+                            <td class="hidden sm:table-cell px-4 py-3 text-gray-600">{{ q.vehicle?.registration_number || '-' }}</td>
+                            <td class="hidden md:table-cell px-4 py-3 text-gray-600">{{ fmtDate(q.quote_date) }}</td>
+                            <td class="hidden md:table-cell px-4 py-3 text-gray-600">{{ fmtDate(q.valid_until) }}</td>
                             <td class="px-4 py-3 text-right font-medium text-gray-900">{{ fmt(q.total_amount) }}</td>
                             <td class="px-4 py-3"><StatusBadge :status="q.status" /></td>
                             <td class="px-4 py-3 text-right">
@@ -79,6 +80,7 @@ function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB')
                         </tr>
                     </tbody>
                 </table>
+                </div><!-- end overflow-x-auto -->
                 <!-- Pagination -->
                 <div v-if="quotes.links?.length > 3" class="flex justify-center gap-1 p-4 border-t border-gray-100">
                     <component

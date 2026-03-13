@@ -31,7 +31,7 @@ function fmt(amount: any) { return '£' + parseFloat(amount || 0).toFixed(2) }
     <Head title="Inventory" />
     <AuthenticatedLayout>
         <div class="space-y-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Inventory</h1>
                     <p class="mt-1 text-sm text-gray-500">Manage parts and stock levels</p>
@@ -41,7 +41,7 @@ function fmt(amount: any) { return '£' + parseFloat(amount || 0).toFixed(2) }
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div class="p-4 border-b border-gray-200 flex flex-wrap gap-3">
-                    <input v-model="search" type="text" placeholder="Search parts..." class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600 w-64" />
+                    <input v-model="search" type="text" placeholder="Search parts..." class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600 flex-1 min-w-0" />
                     <select v-model="category" class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600">
                         <option value="">All Categories</option>
                         <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
@@ -56,39 +56,40 @@ function fmt(amount: any) { return '£' + parseFloat(amount || 0).toFixed(2) }
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Number</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Sell Price</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Min Level</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Name</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Number</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Sell Price</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock</th>
+                                <th class="hidden lg:table-cell px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Min Level</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="part in parts.data" :key="part.id" class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     <Link :href="route(`/inventory/${part.id}`)" class="text-sm font-medium text-electric-600 hover:text-electric-700">{{ part.name }}</Link>
+                                    <p class="sm:hidden text-xs text-gray-500 mt-0.5">{{ part.category || '' }}</p>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">{{ part.part_number || '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ part.category || '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">{{ fmt(part.cost_price || part.purchase_price) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-medium">{{ fmt(part.selling_price || part.price) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600 font-mono">{{ part.part_number || '-' }}</td>
+                                <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ part.category || '-' }}</td>
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">{{ fmt(part.cost_price || part.purchase_price) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 font-medium">{{ fmt(part.selling_price || part.price) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
                                     <span :class="[
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                                         (part.stock_quantity || 0) <= (part.minimum_stock || part.reorder_level || 0) ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                     ]">{{ part.stock_quantity || 0 }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">{{ part.minimum_stock || part.reorder_level || 0 }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                <td class="hidden lg:table-cell px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500">{{ part.minimum_stock || part.reorder_level || 0 }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right space-x-2">
                                     <Link :href="route(`/inventory/${part.id}`)" class="text-electric-600 hover:text-electric-700 text-sm">View</Link>
                                     <Link :href="route(`/inventory/${part.id}/edit`)" class="text-gray-600 hover:text-gray-700 text-sm">Edit</Link>
                                 </td>
                             </tr>
                             <tr v-if="!parts.data?.length">
-                                <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">No parts found</td>
+                                <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500">No parts found</td>
                             </tr>
                         </tbody>
                     </table>

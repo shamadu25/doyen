@@ -115,13 +115,14 @@ function doDelete() {
 
             <!-- Table -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th class="text-left px-4 py-3 font-medium text-gray-600">Supplier</th>
-                            <th class="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
-                            <th class="text-left px-4 py-3 font-medium text-gray-600">Phone / Email</th>
-                            <th class="text-center px-4 py-3 font-medium text-gray-600">Orders</th>
+                            <th class="hidden md:table-cell text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+                            <th class="hidden sm:table-cell text-left px-4 py-3 font-medium text-gray-600">Phone / Email</th>
+                            <th class="hidden md:table-cell text-center px-4 py-3 font-medium text-gray-600">Orders</th>
                             <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
                             <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
                         </tr>
@@ -141,13 +142,14 @@ function doDelete() {
                                 <div v-if="s.website" class="text-xs text-blue-500 truncate max-w-48">
                                     <a :href="s.website" target="_blank" rel="noopener" class="hover:underline">{{ s.website }}</a>
                                 </div>
+                                <p class="sm:hidden text-xs text-gray-500 mt-0.5">{{ s.phone ?? '' }}</p>
                             </td>
-                            <td class="px-4 py-3 text-gray-700">{{ s.contact_person ?? '—' }}</td>
-                            <td class="px-4 py-3">
+                            <td class="hidden md:table-cell px-4 py-3 text-gray-700">{{ s.contact_person ?? '—' }}</td>
+                            <td class="hidden sm:table-cell px-4 py-3">
                                 <div class="text-gray-700">{{ s.phone ?? '—' }}</div>
                                 <div class="text-gray-500 text-xs">{{ s.email ?? '' }}</div>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="hidden md:table-cell px-4 py-3 text-center">
                                 <span class="text-gray-700 font-medium">{{ s.parts_orders_count }}</span>
                             </td>
                             <td class="px-4 py-3 text-center">
@@ -164,6 +166,7 @@ function doDelete() {
                         </tr>
                     </tbody>
                 </table>
+                </div><!-- end overflow-x-auto -->
 
                 <!-- Pagination -->
                 <div v-if="suppliers.meta && suppliers.meta.last_page > 1" class="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-gray-50">

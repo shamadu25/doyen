@@ -144,23 +144,24 @@ const hasFilters = computed(() => search.value || status.value || appointmentTyp
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Bookings</h2>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2">
                     <Link
                         :href="route('/bookings/calendar')"
-                        class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
+                        class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
                     >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Calendar View
+                        <span class="hidden sm:inline">Calendar View</span>
+                        <span class="sm:hidden">Calendar</span>
                     </Link>
                     <Link
                         :href="route('/bookings/create')"
-                        class="inline-flex items-center rounded-xl bg-electric-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-electric-700 transition"
+                        class="inline-flex items-center rounded-xl bg-electric-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-electric-700 transition"
                     >
-                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         New Booking
@@ -235,45 +236,45 @@ const hasFilters = computed(() => search.value || status.value || appointmentTyp
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reference</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Customer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vehicle</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Appointment Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date / Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Technician</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reference</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Customer</th>
+                                    <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vehicle</th>
+                                    <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date / Time</th>
+                                    <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Technician</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
                                 <tr v-for="booking in bookings.data" :key="booking.id" class="hover:bg-gray-50 transition">
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <Link :href="route(`/bookings/${booking.id}`)" class="font-medium text-electric-600 hover:text-electric-700">
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <Link :href="route(`/bookings/${booking.id}`)" class="font-medium text-electric-600 hover:text-electric-700 text-sm">
                                             {{ booking.reference }}
                                         </Link>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                                         {{ booking.customer?.name ?? '—' }}
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                                    <td class="hidden md:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                                         <span v-if="booking.vehicle">
                                             {{ booking.vehicle.registration }} — {{ booking.vehicle.make }} {{ booking.vehicle.model }}
                                         </span>
                                         <span v-else>—</span>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 capitalize">{{ booking.appointment_type }}</td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                    <td class="hidden lg:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-900 capitalize">{{ booking.appointment_type }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                                         {{ formatDate(booking.scheduled_date) }}<br />
                                         <span class="text-gray-500">{{ formatTime(booking.scheduled_time) }}</span>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                                    <td class="hidden lg:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                                         {{ booking.assigned_to_user?.name ?? 'Unassigned' }}
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4">
+                                    <td class="whitespace-nowrap px-4 py-3">
                                         <StatusBadge :status="booking.status" />
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
-                                        <div class="flex items-center justify-end gap-2">
+                                    <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                        <div class="flex items-center justify-end gap-1">
                                             <Link
                                                 :href="route(`/bookings/${booking.id}`)"
                                                 class="text-gray-500 hover:text-electric-600 transition"

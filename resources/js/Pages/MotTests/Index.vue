@@ -30,7 +30,7 @@ watch([search, result], () => {
     <Head title="MOT Tests" />
     <AuthenticatedLayout>
         <div class="space-y-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">MOT Tests</h1>
                     <p class="mt-1 text-sm text-gray-500">Record and track MOT test results</p>
@@ -48,7 +48,7 @@ watch([search, result], () => {
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div class="p-4 border-b border-gray-200 flex flex-wrap gap-3">
-                    <input v-model="search" type="text" placeholder="Search by reg or customer..." class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600 w-64" />
+                    <input v-model="search" type="text" placeholder="Search by reg or customer..." class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600 flex-1 min-w-0" />
                     <select v-model="result" class="rounded-lg border-gray-300 text-sm focus:border-electric-600 focus:ring-electric-600">
                         <option value="">All Results</option>
                         <option value="pass">Pass</option>
@@ -61,34 +61,35 @@ watch([search, result], () => {
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Test #</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tester</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Test #</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tester</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="mot in motTests.data" :key="mot.id" class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     <Link :href="route(`/mot-tests/${mot.id}`)" class="text-sm font-medium text-electric-600 hover:text-electric-700">{{ mot.test_number || `MOT-${mot.id}` }}</Link>
+                                    <p class="sm:hidden text-xs text-gray-500 mt-0.5">{{ mot.vehicle?.customer?.first_name }} {{ mot.vehicle?.customer?.last_name }}</p>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ mot.vehicle?.registration_number }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ mot.vehicle?.customer?.first_name }} {{ mot.vehicle?.customer?.last_name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ mot.tester_name || mot.tester?.name || '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><StatusBadge :status="mot.result || mot.status || 'pending'" size="sm" /></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ mot.test_date ? new Date(mot.test_date).toLocaleDateString('en-GB') : '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ mot.expiry_date ? new Date(mot.expiry_date).toLocaleDateString('en-GB') : '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ mot.vehicle?.registration_number }}</td>
+                                <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ mot.vehicle?.customer?.first_name }} {{ mot.vehicle?.customer?.last_name }}</td>
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ mot.tester_name || mot.tester?.name || '-' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap"><StatusBadge :status="mot.result || mot.status || 'pending'" size="sm" /></td>
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ mot.test_date ? new Date(mot.test_date).toLocaleDateString('en-GB') : '-' }}</td>
+                                <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ mot.expiry_date ? new Date(mot.expiry_date).toLocaleDateString('en-GB') : '-' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right space-x-2">
                                     <Link :href="route(`/mot-tests/${mot.id}`)" class="text-electric-600 hover:text-electric-700 text-sm">View</Link>
                                     <Link :href="route(`/mot-tests/${mot.id}/edit`)" class="text-gray-600 hover:text-gray-700 text-sm">Edit</Link>
                                 </td>
                             </tr>
                             <tr v-if="!motTests.data?.length">
-                                <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">No MOT tests found</td>
+                                <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500">No MOT tests found</td>
                             </tr>
                         </tbody>
                     </table>

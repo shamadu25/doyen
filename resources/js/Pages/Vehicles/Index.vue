@@ -135,25 +135,26 @@ function deleteVehicle(vehicle: Vehicle) {
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Registration</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Make / Model</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Customer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Mileage</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">MOT Expiry</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Registration</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Make / Model</th>
+                                    <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Customer</th>
+                                    <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Mileage</th>
+                                    <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">MOT Expiry</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
                                 <tr v-for="vehicle in vehicles.data" :key="vehicle.id" class="hover:bg-gray-50 transition">
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <Link :href="route(`/vehicles/${vehicle.id}`)" class="font-semibold text-electric-600 hover:text-electric-700">
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <Link :href="route(`/vehicles/${vehicle.id}`)" class="font-semibold text-electric-600 hover:text-electric-700 text-sm">
                                             {{ vehicle.registration_number }}
                                         </Link>
+                                        <p class="sm:hidden text-xs text-gray-500 mt-0.5">{{ vehicle.make }} {{ vehicle.model }}</p>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                                         {{ vehicle.make }} {{ vehicle.model }}
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                    <td class="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                                         <Link
                                             v-if="vehicle.customer"
                                             :href="route(`/customers/${vehicle.customer.id}`)"
@@ -163,10 +164,10 @@ function deleteVehicle(vehicle: Vehicle) {
                                         </Link>
                                         <span v-else class="text-gray-400">—</span>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                    <td class="hidden md:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                                         {{ vehicle.mileage ? vehicle.mileage.toLocaleString('en-GB') : '—' }}
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm">
+                                    <td class="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-sm">
                                         <span
                                             :class="{
                                                 'text-red-600 font-semibold': isMotExpired(vehicle.mot_due_date) || isMotDueSoon(vehicle.mot_due_date),
@@ -178,8 +179,8 @@ function deleteVehicle(vehicle: Vehicle) {
                                             <span v-else-if="isMotDueSoon(vehicle.mot_due_date)" class="ml-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Due soon</span>
                                         </span>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
-                                        <div class="flex items-center justify-end gap-2">
+                                    <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                        <div class="flex items-center justify-end gap-1">
                                             <Link :href="route(`/vehicles/${vehicle.id}`)" class="text-gray-500 hover:text-electric-600" title="View">
                                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </Link>
@@ -193,7 +194,7 @@ function deleteVehicle(vehicle: Vehicle) {
                                     </td>
                                 </tr>
                                 <tr v-if="vehicles.data.length === 0">
-                                    <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
+                                    <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-500">
                                         No vehicles found. <Link :href="route('/vehicles/create')" class="text-electric-600 hover:underline">Add your first vehicle</Link>.
                                     </td>
                                 </tr>

@@ -62,34 +62,34 @@ watch([search, status, priority], () => {
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Technician</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Technician</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="job in jobCards.data" :key="job.id" class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     <Link :href="route(`/job-cards/${job.id}`)" class="text-sm font-medium text-electric-600 hover:text-electric-700">{{ job.job_number }}</Link>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ job.customer?.first_name }} {{ job.customer?.last_name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ job.vehicle?.registration_number }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ job.assigned_to_user?.name || '-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><StatusBadge :status="job.status" size="sm" /></td>
-                                <td class="px-6 py-4 whitespace-nowrap"><StatusBadge :status="job.priority" size="sm" /></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(job.created_at).toLocaleDateString('en-GB') }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ job.customer?.first_name }} {{ job.customer?.last_name }}</td>
+                                <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ job.vehicle?.registration_number }}</td>
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ job.assigned_to_user?.name || '-' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap"><StatusBadge :status="job.status" size="sm" /></td>
+                                <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap"><StatusBadge :status="job.priority" size="sm" /></td>
+                                <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ new Date(job.created_at).toLocaleDateString('en-GB') }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right space-x-2">
                                     <Link :href="route(`/job-cards/${job.id}`)" class="text-electric-600 hover:text-electric-700 text-sm">View</Link>
                                     <Link :href="route(`/job-cards/${job.id}/edit`)" class="text-gray-600 hover:text-gray-700 text-sm">Edit</Link>
                                 </td>
                             </tr>
                             <tr v-if="!jobCards.data?.length">
-                                <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">No job cards found</td>
+                                <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500">No job cards found</td>
                             </tr>
                         </tbody>
                     </table>

@@ -57,7 +57,7 @@ const deleteCustomer = (customer: Customer) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Customers</h2>
                 <Link
                     :href="route('/customers/create')"
@@ -93,15 +93,16 @@ const deleteCustomer = (customer: Customer) => {
 
                 <!-- Table -->
                 <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+                    <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Phone</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Vehicles</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding Balance</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Phone</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Vehicles</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
@@ -110,25 +111,26 @@ const deleteCustomer = (customer: Customer) => {
                                 :key="customer.id"
                                 class="hover:bg-gray-50 transition"
                             >
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <Link :href="route(`/customers/${customer.id}`)" class="font-medium text-electric-600 hover:text-electric-700">
+                                <td class="px-4 py-3">
+                                    <Link :href="route(`/customers/${customer.id}`)" class="font-medium text-electric-600 hover:text-electric-700 text-sm">
                                         {{ customer.first_name }} {{ customer.last_name }}
                                     </Link>
+                                    <p class="sm:hidden text-xs text-gray-500 mt-0.5">{{ customer.phone }}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ customer.email }}</td>
-                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{{ customer.phone }}</td>
-                                <td class="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-600">
+                                <td class="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-600">{{ customer.email }}</td>
+                                <td class="hidden md:table-cell whitespace-nowrap px-4 py-3 text-sm text-gray-600">{{ customer.phone }}</td>
+                                <td class="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-center text-sm text-gray-600">
                                     <span class="inline-flex items-center rounded-full bg-electric-50 px-2.5 py-0.5 text-xs font-medium text-electric-700">
                                         {{ customer.vehicles_count }}
                                     </span>
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium"
+                                <td class="hidden md:table-cell whitespace-nowrap px-4 py-3 text-right text-sm font-medium"
                                     :class="customer.outstanding_balance > 0 ? 'text-red-600' : 'text-green-600'"
                                 >
                                     {{ formatCurrency(customer.outstanding_balance) }}
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
-                                    <div class="flex items-center justify-end gap-2">
+                                <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                    <div class="flex items-center justify-end gap-1">
                                         <Link
                                             :href="route(`/customers/${customer.id}`)"
                                             class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
@@ -161,7 +163,7 @@ const deleteCustomer = (customer: Customer) => {
                                 </td>
                             </tr>
                             <tr v-if="customers.data.length === 0">
-                                <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
+                                <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center">
                                         <svg class="mb-3 h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -175,9 +177,10 @@ const deleteCustomer = (customer: Customer) => {
                     </table>
 
                     <!-- Pagination -->
-                    <div v-if="customers.last_page > 1" class="border-t border-gray-200 bg-gray-50 px-6 py-3">
+                    <div v-if="customers.last_page > 1" class="border-t border-gray-200 bg-gray-50 px-4 py-3">
                         <Pagination :links="customers.links" />
                     </div>
+                    </div><!-- end overflow-x-auto -->
                 </div>
             </div>
         </div>
