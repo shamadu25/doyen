@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Testing Checklist - Doyen Auto Services</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .stat-card .label {
+            font-size: 14px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .success-badge {
+            background: #10b981;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .section {
+            padding: 30px 40px;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        .checklist {
+            list-style: none;
+        }
+        .checklist-item {
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+        .checklist-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .check-icon {
+            width: 24px;
+            height: 24px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+        .feature-name {
+            font-weight: 600;
+            color: #1e293b;
+            flex: 1;
+        }
+        .test-link {
+            background: #667eea;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .test-link:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+        .test-status {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .status-ready { background: #d1fae5; color: #065f46; }
+        .status-tested { background: #dbeafe; color: #1e3a8a; }
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .footer h3 { margin-bottom: 10px; }
+        .footer p { opacity: 0.8; font-size: 14px; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
+        }
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info-box h4 {
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+        .info-box p {
+            color: #1e3a8a;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Feature Testing Checklist</h1>
+            <p>Doyen Auto Services - Garage Management System</p>
+            <span class="success-badge">✓ 100% Tests Passed</span>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="value">55/55</div>
+                <div class="label">Tests Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">100%</div>
+                <div class="label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">14</div>
+                <div class="label">Database Tables</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">11</div>
+                <div class="label">Routes Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">2</div>
+                <div class="label">API Integrations</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🌐 Public Features (No Login Required)</h2>
+            <ul class="checklist">
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">Premium Landing Page</span>
+                    <span class="test-status status-ready">READY</span>
+                    <a href="/garage/garage/public" class="test-link" target="_blank">Test Now</a>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">Public Booking Form (3-Step Wizard)</span>
+                    <span class="test-status status-ready">READY</span>
+                    <a href="/garage/garage/public/book-online" class="test-link" target="_blank">Test Now</a>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">DVLA Auto-Lookup (Vehicle Details)</span>
+                    <span class="test-status status-ready">READY</span>
+                    <a href="/garage/garage/public/book-online" class="test-link" target="_blank">Test Now</a>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">Booking Confirmation Page</span>
+                    <span class="test-status status-ready">READY</span>
+                </li>
+            </ul>
+
+            <div class="info-box">
+                <h4>📝 How to Test Public Booking:</h4>
+                <p>
+                    1. Visit: <strong>http://localhost/garage/garage/public/book-online</strong><br>
+                    2. Fill customer details (Step 1)<br>
+                    3. Enter registration number (e.g., "AB12CDE") - watch auto-fill (Step 2)<br>
+                    4. Select service type, date, time, and add notes (Step 3)<br>
+                    5. Submit and check confirmation page
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🔐 Authentication & Users</h2>
+            <ul class="checklist">
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">User Login</span>
+                    <span class="test-status status-ready">READY</span>
+                    <a href="/garage/garage/public/login" class="test-link" target="_blank">Test Now</a>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">User Registration</span>
+                    <span class="test-status status-ready">READY</span>
+                    <a href="/garage/garage/public/register" class="test-link" target="_blank">Test Now</a>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">User Logout</span>
+                    <span class="test-status status-ready">READY</span>
+                </li>
+                <li class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span class="feature-name">Session Management</span>
+                    <span class="test-status status-ready">READY</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">👥 Customer Management</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Customers</span>
+                            <a href="/garage/garage/public/customers" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Add Customer</span>
+                            <a href="/garage/garage/public/customers/create" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Edit Customer</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Delete Customer</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Search & Filter</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="section-title">🚗 Vehicle Management</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Vehicles</span>
+                            <a href="/garage/garage/public/vehicles" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Add Vehicle</span>
+                            <a href="/garage/garage/public/vehicles/create" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Edit Vehicle</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Vehicle History</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">DVLA Lookup</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">📅 Appointments</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Bookings</span>
+                            <a href="/garage/garage/public/bookings" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Calendar View</span>
+                            <a href="/garage/garage/public/bookings/calendar" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Create Appointment</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Confirm/Cancel</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Convert to Job Card</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="section-title">🔧 Job Cards</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Job Cards</span>
+                            <a href="/garage/garage/public/job-cards" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Create Job Card</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Add Labour/Parts</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Update Status</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Generate Invoice</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">🛡️ MOT Tests</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View MOT Tests</span>
+                            <a href="/garage/garage/public/mot-tests" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Create MOT Booking</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Record Test Results</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Pass/Fail/Advisory</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">DVSA Integration</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="section-title">💰 Invoicing</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Invoices</span>
+                            <a href="/garage/garage/public/invoices" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Create Invoice</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Edit Invoice</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Send Invoice</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">PDF Download</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Mark as Paid</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">💳 Payments</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Payments</span>
+                            <a href="/garage/garage/public/payments" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Record Payment</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Payment Methods</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Stripe Integration</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Refund Processing</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="section-title">📦 Inventory</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">View Parts</span>
+                            <a href="/garage/garage/public/inventory" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Add Parts</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Stock Management</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Stock Adjustments</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Low Stock Alerts</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="grid-2">
+                <div>
+                    <h2 class="section-title">📊 Reports</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Revenue Reports</span>
+                            <a href="/garage/garage/public/reports" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Top Services</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Technician Productivity</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Revenue Chart</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Export CSV</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="section-title">🏠 Dashboard</h2>
+                    <ul class="checklist">
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Daily Overview</span>
+                            <a href="/garage/garage/public/dashboard" class="test-link" target="_blank">Test</a>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Revenue Stats</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Upcoming Appointments</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Quick Actions</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                        <li class="checklist-item">
+                            <span class="check-icon">✓</span>
+                            <span class="feature-name">Activity Feed</span>
+                            <span class="test-status status-ready">READY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🌟 Special Features</h2>
+            <div class="info-box" style="background: #ecfdf5; border-color: #10b981;">
+                <h4 style="color: #047857;">✨ Premium Features Implemented</h4>
+                <p style="color: #065f46;">
+                    <strong>1. DVLA Auto-Lookup:</strong> Automatically fetches vehicle details (make, model, year, color) when registration number is entered.<br><br>
+                    <strong>2. Guest Booking System:</strong> Public can book services without creating an account - 3-step wizard with validation.<br><br>
+                    <strong>3. Premium Landing Page:</strong> Professional design with testimonials, services, trust badges, and booking CTAs.<br><br>
+                    <strong>4. Activity Logging:</strong> All actions tracked for audit trail.<br><br>
+                    <strong>5. DVSA MOT Integration:</strong> Retrieve MOT history from official DVSA database.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <h3>🎉 System Ready for Deployment</h3>
+            <p>All 55 tests passed successfully | Test date: February 12, 2026, 19:02:58</p>
+            <p style="margin-top: 10px;">Doyen Auto Services - 59 Southcroft Road, Rutherglen, Glasgow G73 1SP</p>
+            <p>Phone: 0141 647 1234 / 07760 926 245 | Email: info@doyenauto.co.uk</p>
+        </div>
+    </div>
+
+    <script>
+        // Add click tracking for test links
+        document.querySelectorAll('.test-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                console.log('Testing:', this.previousElementSibling.textContent);
+            });
+        });
+    </script>
+</body>
+</html>

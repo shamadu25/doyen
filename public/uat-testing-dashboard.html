@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAT Testing Dashboard - Doyen Auto Services</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 36px; margin-bottom: 10px; }
+        .header p { font-size: 18px; opacity: 0.95; }
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #10b981;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .nav-tabs {
+            display: flex;
+            background: #f1f5f9;
+            border-bottom: 2px solid #e2e8f0;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 16px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.3s;
+            white-space: nowrap;
+            position: relative;
+        }
+        .tab:hover { background: #e2e8f0; color: #1e293b; }
+        .tab.active {
+            color: #3b82f6;
+            background: white;
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #3b82f6;
+        }
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        .tab-content.active { display: block; }
+        .test-scenario {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border-left: 4px solid #94a3b8;
+            transition: all 0.3s;
+        }
+        .test-scenario:hover {
+            border-left-color: #3b82f6;
+            transform: translateX(4px);
+        }
+        .test-scenario.passed {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .test-scenario.failed {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .test-scenario.testing {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .scenario-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .scenario-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .status-pending { background: #e2e8f0; color: #475569; }
+        .status-testing { background: #fef3c7; color: #92400e; }
+        .status-passed { background: #d1fae5; color: #065f46; }
+        .status-failed { background: #fee2e2; color: #991b1b; }
+        .test-steps {
+            list-style: none;
+            margin-top: 16px;
+        }
+        .test-step {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: #e2e8f0;
+            color: #64748b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .test-step.completed .step-number {
+            background: #10b981;
+            color: white;
+        }
+        .step-text {
+            flex: 1;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .test-step.completed .step-text {
+            color: #1e293b;
+        }
+        .test-button {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        .test-button.success {
+            background: #10b981;
+        }
+        .test-button.success:hover {
+            background: #059669;
+        }
+        .test-button.danger {
+            background: #ef4444;
+        }
+        .test-button.danger:hover {
+            background: #dc2626;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .stat-card.red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .stat-card.yellow { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .stat-card.blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .stat-value {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.95;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .notes-area {
+            margin-top: 16px;
+            padding: 12px;
+            background: white;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+        }
+        .notes-area textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+            color: #475569;
+        }
+        .expected-result {
+            background: #dbeafe;
+            border-left: 3px solid #3b82f6;
+            padding: 12px 16px;
+            margin-top: 16px;
+            border-radius: 6px;
+        }
+        .expected-result strong {
+            color: #1e40af;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .expected-result p {
+            color: #1e3a8a;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #3b82f6;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .info-banner {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .info-banner h4 {
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+        .info-banner p {
+            color: #1e3a8a;
+            line-height: 1.6;
+            margin: 0;
+        }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .scenario-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 User Acceptance Testing (UAT)</h1>
+            <p>Doyen Auto Services - Garage Management System</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="stats-grid" style="padding: 30px; background: #f8fafc;">
+            <div class="stat-card blue">
+                <div class="stat-value" id="totalScenarios">0</div>
+                <div class="stat-label">Total Scenarios</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-value" id="passedScenarios">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-value" id="failedScenarios">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card yellow">
+                <div class="stat-value" id="pendingScenarios">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="tab active" onclick="switchTab('public')">Public User</button>
+            <button class="tab" onclick="switchTab('customer')">Customer Journey</button>
+            <button class="tab" onclick="switchTab('scheduler')">Scheduler</button>
+            <button class="tab" onclick="switchTab('technician')">Technician</button>
+            <button class="tab" onclick="switchTab('admin')">Admin</button>
+            <button class="tab" onclick="switchTab('reports')">Reporting</button>
+        </div>
+
+        <!-- PUBLIC USER TAB -->
+        <div class="tab-content active" id="public">
+            <h2 class="section-title">Public User Scenarios (No Login)</h2>
+            
+            <div class="info-banner">
+                <h4>📝 Testing Objective</h4>
+                <p>Verify that potential customers can easily browse services, book appointments, and receive confirmation without creating an account.</p>
+            </div>
+
+            <div class="test-scenario" data-scenario="public-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-PUB-001: View Premium Landing Page</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Visit: http://localhost/garage/garage/public</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Verify top bar shows phone: 07760 926 245</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Scroll and check all 10 services are displayed</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Verify testimonials section with 3 reviews</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Check "Book Online" buttons are prominent</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Professional landing page loads with gradient design, all services visible, testimonials showing 5-star ratings, trust badges (DVSA, insurance), and clear booking CTAs.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes (issues found, observations, etc.)" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="public-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-PUB-002: Complete Booking with DVLA Auto-Lookup</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Click "Book Online" button</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Fill customer details (John Doe, john@test.com, 07123456789)</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Click "Next" to vehicle step</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Enter registration: AB12CDE</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Wait 1 second - watch for loading spinner and auto-fill</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Verify green success message appears</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Click "Next" to appointment step</span></li>
+                    <li class="test-step"><span class="step-number">8</span><span class="step-text">Select service: MOT</span></li>
+                    <li class="test-step"><span class="step-number">9</span><span class="step-text">Choose tomorrow's date</span></li>
+                    <li class="test-step"><span class="step-number">10</span><span class="step-text">Select time: 10:00</span></li>
+                    <li class="test-step"><span class="step-number">11</span><span class="step-text">Add notes: "UAT Test Booking"</span></li>
+                    <li class="test-step"><span class="step-number">12</span><span class="step-text">Click "Book Appointment"</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Booking confirmation page appears with booking reference number, customer details, vehicle details, and appointment information. Database should have new appointment, customer, and vehicle records.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/book-online" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes (issues found, observations, etc.)" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="public-3">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-PUB-003: Manual Vehicle Entry (DVLA Lookup Fails)</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+<ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Start new booking</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Fill customer details</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Enter invalid registration: ZZZZZZZ</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Wait - verify error message appears</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Manually enter: Make: Toyota, Model: Corolla, Year: 2020</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Complete booking</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>System shows warning message "Vehicle not found. Please enter details manually" and allows user to manually fill vehicle details. Booking completes successfully.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/book-online" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOMER JOURNEY TAB -->
+        <div class="tab-content" id="customer">
+            <h2 class="section-title">Customer Management Journey</h2>
+
+            <div class="test-scenario" data-scenario="customer-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-CUST-001: Add New Customer</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Login to admin panel</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Navigate to Customers</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Click "Add Customer"</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Fill: Name, Email, Phone, Address</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Save customer</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Verify customer appears in list</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Customer is created successfully, appears in customer list, and can be searched/filtered. Success message displayed.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/customers/create" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="customer-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-CUST-002: Edit Customer Details</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Find customer from previous test</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Edit"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Update phone number</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Save changes</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Verify updated phone shows in list</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Customer details update successfully, changes persist after save, activity log records the update.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/customers" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="customer-3">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-CUST-003: Add Vehicle to Customer</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">View customer details</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Add Vehicle"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Enter: Registration: BX21ABC, Make: BMW, Model: 320d, Year: 2021</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Save vehicle</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Verify vehicle shows under customer</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Vehicle is linked to customer, appears in vehicle list and customer's vehicle tab.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/vehicles/create" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCHEDULER TAB -->
+        <div class="tab-content" id="scheduler">
+            <h2 class="section-title">Appointment Scheduling Workflow</h2>
+
+            <div class="test-scenario" data-scenario="scheduler-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-SCHED-001: Create Appointment</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Navigate to Bookings</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "New Appointment"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Select customer and vehicle</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Choose service type: Service</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Set date & time</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Add description</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Save appointment</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Appointment created with status "pending", appears in bookings list and calendar view.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/bookings/create" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="scheduler-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-SCHED-002: View Calendar</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Click "Calendar View"</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Verify all appointments show on calendar</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Click on appointment to view details</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Navigate between months</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Calendar displays all appointments, clicking shows details, navigation works smoothly.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/bookings/calendar" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="scheduler-3">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-SCHED-003: Convert to Job Card</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Find confirmed appointment</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Convert to Job Card"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Verify job card is created</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Check appointment status updates</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Job card created with details from appointment, appointment marked as converted.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/bookings" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNICIAN TAB -->
+        <div class="tab-content" id="technician">
+            <h2 class="section-title">Technician Workflow</h2>
+
+            <div class="test-scenario" data-scenario="tech-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-TECH-001: Complete Job Card</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Open job card from previous test</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Add Labour"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Add: "Oil Change - 1 hour - £50"</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Click "Add Part"</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Select part from inventory (e.g., Oil Filter)</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Update status to "In Progress"</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Add completion notes</span></li>
+                    <li class="test-step"><span class="step-number">8</span><span class="step-text">Click "Complete Job Card"</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Labour and parts added, stock deducted, job card marked as completed, ready for invoicing.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/job-cards" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="tech-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-TECH-002: Record MOT Test</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Navigate to MOT Tests</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "New MOT Test"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Select vehicle</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Enter test date (today)</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Leave result as "booked" initially</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Save MOT booking</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Edit MOT, set result to "passed"</span></li>
+                    <li class="test-step"><span class="step-number">8</span><span class="step-text">Set expiry date (1 year from now)</span></li>
+                    <li class="test-step"><span class="step-number">9</span><span class="step-text">Enter mileage</span></li>
+                    <li class="test-step"><span class="step-number">10</span><span class="step-text">Save test result</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>MOT test recorded, vehicle MOT due date updated, test result shows as "passed".</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/mot-tests/create" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN TAB -->
+        <div class="tab-content" id="admin">
+            <h2 class="section-title">Admin & Billing Workflow</h2>
+
+            <div class="test-scenario" data-scenario="admin-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-ADMIN-001: Generate Invoice from Job Card</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Open completed job card</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Generate Invoice"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Verify invoice includes all labour + parts</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Check total calculation is correct</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Save invoice</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Verify unique invoice number generated</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Invoice created with all job card items, unique invoice number assigned, status set to "draft".</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/job-cards" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="admin-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-ADMIN-002: Edit Invoice & Send</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Find invoice from previous test</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Edit"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Add additional line item</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Verify total recalculates</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Save changes</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Click "Send Invoice"</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Verify status changes to "sent"</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Invoice edits save correctly, total recalculates, status updates to "sent", email queued (if configured).</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/invoices" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="admin-3">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-ADMIN-003: Record Payment</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Open invoice</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Click "Record Payment"</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Enter amount (full invoice total)</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Select payment method: Cash</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Add payment reference</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Save payment</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Verify invoice status = "paid"</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Payment recorded, invoice marked as "paid", payment appears in payments list.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/payments/create" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="admin-4">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-ADMIN-004: Manage Inventory</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Navigate to Inventory</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Find part used in job card</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Verify stock quantity decreased</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Click "Adjust Stock"</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Add 10 units</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Add note: "Stock replenishment"</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Save adjustment</span></li>
+                    <li class="test-step"><span class="step-number">8</span><span class="step-text">Verify new stock level</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Stock adjustments record correctly, transaction logged, inventory levels accurate.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/inventory" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTS TAB -->
+        <div class="tab-content" id="reports">
+            <h2 class="section-title">Reporting & Analytics</h2>
+
+            <div class="test-scenario" data-scenario="reports-1">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-REP-001: View Dashboard</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Navigate to Dashboard</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Verify all stat cards display data</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Check upcoming appointments section</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">View recent activity feed</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">Verify quick action buttons work</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Dashboard loads with accurate statistics, upcoming appointments visible, activity feed shows recent actions.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/dashboard" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="test-scenario" data-scenario="reports-2">
+                <div class="scenario-header">
+                    <div class="scenario-title">UAT-REP-002: Generate Reports</div>
+                    <span class="scenario-status status-pending" onclick="toggleStatus(this)">Pending</span>
+                </div>
+                <ul class="test-steps">
+                    <li class="test-step"><span class="step-number">1</span><span class="step-text">Navigate to Reports</span></li>
+                    <li class="test-step"><span class="step-number">2</span><span class="step-text">Select period: This Month</span></li>
+                    <li class="test-step"><span class="step-number">3</span><span class="step-text">Verify revenue chart displays</span></li>
+                    <li class="test-step"><span class="step-number">4</span><span class="step-text">Check top services table</span></li>
+                    <li class="test-step"><span class="step-number">5</span><span class="step-text">View technician productivity</span></li>
+                    <li class="test-step"><span class="step-number">6</span><span class="step-text">Click "Export CSV"</span></li>
+                    <li class="test-step"><span class="step-number">7</span><span class="step-text">Verify CSV downloads</span></li>
+                </ul>
+                <div class="expected-result">
+                    <strong>✓ Expected Result:</strong>
+                    <p>Reports display accurate data, charts render correctly, CSV export works with proper data.</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/garage/garage/public/reports" target="_blank" class="test-button">Start Test</a>
+                    <button class="test-button success" onclick="markPassed(this)">Pass</button>
+                    <button class="test-button danger" onclick="markFailed(this)">Fail</button>
+                </div>
+                <div class="notes-area">
+                    <textarea placeholder="Add test notes" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stats = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            pending: 0
+        };
+
+        function updateStats() {
+            const scenarios = document.querySelectorAll('.test-scenario');
+            stats.total = scenarios.length;
+            stats.passed = document.querySelectorAll('.scenario-status.status-passed').length;
+            stats.failed = document.querySelectorAll('.scenario-status.status-failed').length;
+            stats.pending = document.querySelectorAll('.scenario-status.status-pending').length;
+
+            document.getElementById('totalScenarios').textContent = stats.total;
+            document.getElementById('passedScenarios').textContent = stats.passed;
+            document.getElementById('failedScenarios').textContent = stats.failed;
+            document.getElementById('pendingScenarios').textContent = stats.pending;
+
+            const progress = stats.total > 0 ? ((stats.passed + stats.failed) / stats.total) * 100 : 0;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function switchTab(tabName) {
+            // Remove active from all tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active to clicked tab
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function toggleStatus(element) {
+            const scenario = element.closest('.test-scenario');
+            if (element.classList.contains('status-pending')) {
+                element.classList.remove('status-pending');
+                element.classList.add('status-testing');
+                element.textContent = 'Testing';
+                scenario.classList.add('testing');
+            }
+        }
+
+        function markPassed(button) {
+            const scenario = button.closest('.test-scenario');
+            const statusBtn = scenario.querySelector('.scenario-status');
+            
+            statusBtn.className = 'scenario-status status-passed';
+            statusBtn.textContent = '✓ Passed';
+            scenario.className = 'test-scenario passed';
+            
+            // Mark all steps as completed
+            scenario.querySelectorAll('.test-step').forEach(step => {
+                step.classList.add('completed');
+            });
+
+            updateStats();
+        }
+
+        function markFailed(button) {
+            const scenario = button.closest('.test-scenario');
+            const statusBtn = scenario.querySelector('.scenario-status');
+            
+            statusBtn.className = 'scenario-status status-failed';
+            statusBtn.textContent = '✗ Failed';
+            scenario.className = 'test-scenario failed';
+
+            updateStats();
+        }
+
+        // Initialize stats on load
+        document.addEventListener('DOMContentLoaded', updateStats);
+
+        // Save state to localStorage
+        document.querySelectorAll('textarea').forEach(textarea => {
+            const scenarioId = textarea.closest('.test-scenario').dataset.scenario;
+            const saved = localStorage.getItem('uat-notes-' + scenarioId);
+            if (saved) textarea.value = saved;
+
+            textarea.addEventListener('input', () => {
+                localStorage.setItem('uat-notes-' + scenarioId, textarea.value);
+            });
+        });
+    </script>
+</body>
+</html>

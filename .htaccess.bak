@@ -1,0 +1,7 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Only redirect if accessing root directory (not already in public)
+    RewriteCond %{REQUEST_URI} ^/garage/?$
+    RewriteRule ^(.*)$ /garage/public/ [L,R=301]
+</IfModule>

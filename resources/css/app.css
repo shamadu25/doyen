@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  /* Deep Navy — primary brand */
+  --color-navy-950: #0B1F3B;
+  --color-navy-900: #0d2847;
+  --color-navy-800: #112f52;
+  --color-navy-700: #1a3a6a;
+  --color-navy-600: #1e4a8a;
+
+  /* Electric Blue — accent */
+  --color-electric-700: #0062CC;
+  --color-electric-600: #007BFF;
+  --color-electric-500: #3395FF;
+  --color-electric-400: #66B3FF;
+  --color-electric-200: #BEDAFF;
+  --color-electric-100: #E8F4FF;
+  --color-electric-50:  #F0F7FF;
+}

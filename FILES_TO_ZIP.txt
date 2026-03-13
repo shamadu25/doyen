@@ -1,0 +1,40 @@
+================================================================================
+ DOYEN AUTO SERVICES - FILES TO INCLUDE IN ZIP
+================================================================================
+
+SELECT THESE FOLDERS (Hold Ctrl + Click each one):
+-----------------------------------------------
+[✓] app
+[✓] bootstrap
+[✓] config
+[✓] database
+[✓] public
+[✓] resources
+[✓] routes
+[✓] storage
+[✓] vendor
+
+SELECT THESE FILES:
+------------------
+[✓] artisan
+[✓] composer.json
+[✓] composer.lock
+[✓] package.json
+[✓] .env.production
+[✓] LIVE_SERVER_DEPLOYMENT.md
+[✓] DEPLOYMENT_QUICK_REFERENCE.md
+
+HOW TO CREATE ZIP:
+-----------------
+1. Open this folder in Windows Explorer
+2. Hold CTRL key
+3. Click each folder/file listed above
+4. Right-click on selected items
+5. Choose "Send to" → "Compressed (zipped) folder"
+6. Name it: doyen-auto-production.zip
+
+EXPECTED SIZE: 80-150 MB
+
+NEXT: Upload to https://doyen.cliqpos.com and follow LIVE_SERVER_DEPLOYMENT.md
+
+================================================================================

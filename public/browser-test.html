@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Console Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { margin-top: 0; }
+        .test-box {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4ade80;
+        }
+        .alert {
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        #console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Browser & JavaScript Test</h1>
+        
+        <div class="test-box">
+            <h3>✅ Test 1: Basic HTML Rendering</h3>
+            <p>If you can see this text, HTML is rendering correctly!</p>
+        </div>
+        
+        <div class="test-box" id="js-test">
+            <h3>⏳ Test 2: JavaScript Execution</h3>
+            <p id="js-status">Checking JavaScript...</p>
+        </div>
+        
+        <div class="test-box">
+            <h3>🧪 Test 3: Console Log Test</h3>
+            <p>Click the button to test console logging:</p>
+            <button onclick="testConsole()">Test Console</button>
+            <button onclick="testModules()">Test ES Modules</button>
+            <button onclick="testFetch()">Test Fetch API</button>
+        </div>
+        
+        <div id="console-output"></div>
+        
+        <div class="alert">
+            <h3>⚠️ Important Instructions:</h3>
+            <ol>
+                <li>Press <code>F12</code> to open Developer Tools</li>
+                <li>Click the <strong>Console</strong> tab</li>
+                <li>Look for any <span style="color: #fca5a5;">RED errors</span></li>
+                <li>Share any errors you see</li>
+            </ol>
+        </div>
+
+        <div class="test-box">
+            <h3>📋 Browser Information:</h3>
+            <div id="browser-info"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test 2: JavaScript Execution
+        document.getElementById('js-status').innerHTML = '<span class="success">✅ JavaScript is working!</span>';
+        document.getElementById('js-status').style.color = '#4ade80';
+        
+        // Console output function
+        function log(message, type = 'info') {
+            const output = document.getElementById('console-output');
+            const time = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'error' : 'success';
+            output.innerHTML += `<div class="${colorClass}">[${time}] ${message}</div>`;
+            console.log(message);
+        }
+        
+        function testConsole() {
+            log('✅ Console.log is working!', 'success');
+            console.log('Test message from test page');
+            console.error('This is a test ERROR - you should see this in red');
+            console.warn('This is a test WARNING - you should see this in yellow/orange');
+        }
+        
+        function testModules() {
+            log('Testing ES Modules support...', 'info');
+            if ('noModule' in HTMLScriptElement.prototype) {
+                log('✅ ES Modules are supported!', 'success');
+            } else {
+                log('❌ ES Modules NOT supported!', 'error');
+            }
+        }
+        
+        async function testFetch() {
+            log('Testing Fetch API...', 'info');
+            try {
+                const response = await fetch('diagnostic.php');
+                if (response.ok) {
+                    log('✅ Fetch API is working!', 'success');
+                } else {
+                    log('⚠️ Fetch returned status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ Fetch failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Browser info
+        const browserInfo = document.getElementById('browser-info');
+        browserInfo.innerHTML = `
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Platform:</strong> ${navigator.platform}</p>
+            <p><strong>Language:</strong> ${navigator.language}</p>
+            <p><strong>Online:</strong> ${navigator.onLine ? 'Yes' : 'No'}</p>
+            <p><strong>Cookies Enabled:</strong> ${navigator.cookieEnabled ? 'Yes' : 'No'}</p>
+        `;
+        
+        // Auto log on page load
+        log('✅ Page loaded successfully!', 'success');
+        log('JavaScript engine is running', 'success');
+        
+        // Check for errors
+        window.addEventListener('error', function(e) {
+            log('❌ JavaScript Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno, 'error');
+        });
+        
+        console.log('%c🔍 Browser Test Page Loaded', 'color: #4ade80; font-size: 16px; font-weight: bold');
+        console.log('%cIf you see this, console logging is working!', 'color: #3b82f6');
+    </script>
+</body>
+</html>

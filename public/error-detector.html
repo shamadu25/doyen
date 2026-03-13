@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Error Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .error-box {
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .warning-box {
+            background: #f59e0b;
+            color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success-box {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        h1 { color: #3b82f6; }
+        #iframe-test {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #3b82f6;
+            margin: 20px 0;
+            background: white;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Console Error Detector</h1>
+    
+    <div class="success-box">
+        <strong>This page will load the main app in an iframe and capture any console errors.</strong>
+    </div>
+    
+    <button onclick="loadMainApp()">Load Main App in IFrame</button>
+    <button onclick="clearErrors()">Clear Errors</button>
+    <button onclick="testDirectly()">Open Main App Directly</button>
+    
+    <h2>Captured Console Messages:</h2>
+    <div id="console-output"></div>
+    
+    <h2>App Preview (IFrame):</h2>
+    <iframe id="iframe-test" src="about:blank"></iframe>
+    
+    <h2>Network Requests:</h2>
+    <div id="network-output"></div>
+
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        const networkOutput = document.getElementById('network-output');
+        const iframe = document.getElementById('iframe-test');
+        
+        let errorCount = 0;
+        let warningCount = 0;
+        
+        // Capture console errors
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalLog = console.log;
+        
+        console.error = function(...args) {
+            errorCount++;
+            logToPage('ERROR', args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            warningCount++;
+            logToPage('WARN', args.join(' '), 'warning');
+            originalWarn.apply(console, args);
+        };
+        
+        function logToPage(type, message, className) {
+            const div = document.createElement('div');
+            div.className = className + '-box';
+            div.textContent = `[${type}] ${message}`;
+            consoleOutput.appendChild(div);
+        }
+        
+        function loadMainApp() {
+            consoleOutput.innerHTML = '<div class="success-box">Loading main app...</div>';
+            networkOutput.innerHTML = '';
+            
+            // Test asset loading
+            testAssetLoading();
+            
+            // Load the main app
+            setTimeout(() => {
+                iframe.src = 'http://localhost/garage/garage/public/';
+                
+                // Wait and check if anything rendered
+                setTimeout(() => {
+                    checkIframeContent();
+                }, 3000);
+            }, 500);
+        }
+        
+        async function testAssetLoading() {
+            const assets = [
+                '/garage/garage/public/build/assets/app-CNHyPMQB.css',
+                '/garage/garage/public/build/assets/app-Ca3ID2pa.js'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch('http://localhost' + asset, { method: 'HEAD' });
+                    const status = response.ok ? '✅' : '❌';
+                    networkOutput.innerHTML += `<div class="${response.ok ? 'success' : 'error'}-box">${status} ${asset.split('/').pop()} - Status: ${response.status}</div>`;
+                } catch (error) {
+                    networkOutput.innerHTML += `<div class="error-box">❌ ${asset.split('/').pop()} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function checkIframeContent() {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const appDiv = iframeDoc.getElementById('app');
+                
+                if (appDiv) {
+                    const hasContent = appDiv.innerHTML.trim().length > 0;
+                    const dataPage = appDiv.getAttribute('data-page');
+                    
+                    if (hasContent && dataPage) {
+                        logToPage('INFO', `✅ App div found with data-page attribute`, 'success');
+                        logToPage('INFO', `#app innerHTML length: ${appDiv.innerHTML.length} chars`, 'success');
+                        
+                        if (appDiv.children.length === 0) {
+                            logToPage('ERROR', '❌ #app div exists but Vue has NOT mounted!', 'error');
+                            logToPage('ERROR', 'This means Vue/Inertia failed to initialize', 'error');
+                            logToPage('INFO', 'Check browser console (F12) for JavaScript errors', 'warning');
+                        } else {
+                            logToPage('INFO', `✅ Vue mounted! ${appDiv.children.length} child elements`, 'success');
+                        }
+                    } else {
+                        logToPage('ERROR', `❌ App div found but missing data-page or content`, 'error');
+                    }
+                } else {
+                    logToPage('ERROR', `❌ #app div NOT found in HTML!`, 'error');
+                }
+                
+                // Check for script tags
+                const scripts = iframeDoc.querySelectorAll('script[type="module"]');
+                logToPage('INFO', `Found ${scripts.length} module scripts`, scripts.length > 0 ? 'success' : 'warning');
+                
+            } catch (error) {
+                logToPage('ERROR', `Cannot access iframe content: ${error.message}`, 'error');
+                logToPage('INFO', 'This might be a CORS issue (not a problem for localhost)', 'warning');
+            }
+        }
+        
+        function clearErrors() {
+            consoleOutput.innerHTML = '<div class="success-box">Errors cleared</div>';
+            networkOutput.innerHTML = '';
+            errorCount = 0;
+            warningCount = 0;
+        }
+        
+        function testDirectly() {
+            window.open('http://localhost/garage/garage/public/', '_blank');
+            logToPage('INFO', '🔗 Opened main app in new tab. Check its console (F12)!', 'success');
+        }
+        
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            logToPage('INFO', '📡 Error detector ready. Click "Load Main App in IFrame"', 'success');
+        });
+    </script>
+</body>
+</html>
