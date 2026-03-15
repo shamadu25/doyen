@@ -176,18 +176,18 @@ function saveContact() {
 
 // --- About Form ---
 const aboutForm = useForm({
-    hero_badge:             props.content.about?.hero_badge            || '',
-    hero_headline:          props.content.about?.hero_headline         || '',
-    hero_headline_gradient: props.content.about?.hero_headline_gradient || '',
+    hero_badge:             props.content.about?.hero_badge            || 'About Doyen Auto Services',
+    hero_headline:          props.content.about?.hero_headline         || 'Glasgow-based Precision',
+    hero_headline_gradient: props.content.about?.hero_headline_gradient || 'Vehicle Diagnostics',
     hero_subline:           props.content.about?.hero_subline          || '',
-    stat_1_value:           props.content.about?.stat_1_value          || '',
-    stat_1_label:           props.content.about?.stat_1_label          || '',
-    stat_2_value:           props.content.about?.stat_2_value          || '',
-    stat_2_label:           props.content.about?.stat_2_label          || '',
-    stat_3_value:           props.content.about?.stat_3_value          || '',
-    stat_3_label:           props.content.about?.stat_3_label          || '',
-    stat_4_value:           props.content.about?.stat_4_value          || '',
-    stat_4_label:           props.content.about?.stat_4_label          || '',
+    stat_1_value:           props.content.about?.stat_1_value          || '16+',
+    stat_1_label:           props.content.about?.stat_1_label          || 'Years Experience',
+    stat_2_value:           props.content.about?.stat_2_value          || 'Glasgow',
+    stat_2_label:           props.content.about?.stat_2_label          || 'Based in Rutherglen',
+    stat_3_value:           props.content.about?.stat_3_value          || 'ECU',
+    stat_3_label:           props.content.about?.stat_3_label          || 'Diagnostics Specialist',
+    stat_4_value:           props.content.about?.stat_4_value          || 'Scotland',
+    stat_4_label:           props.content.about?.stat_4_label          || 'Wide Coverage',
     who_intro_1:            props.content.about?.who_intro_1           || '',
     who_intro_2:            props.content.about?.who_intro_2           || '',
     who_intro_3:            props.content.about?.who_intro_3           || '',
@@ -671,7 +671,8 @@ function saveAbout() {
 
                 <!-- Quick Stats -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-5">Quick Stats Bar (4 items)</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-1">Quick Stats Bar</h2>
+                    <p class="text-sm text-gray-500 mb-5">These 4 stat badges appear on the About Us page hero banner (e.g. <strong>16+</strong> Years Experience, <strong>ECU</strong> Diagnostics Specialist). Edit the value and label for each.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div v-for="n in 4" :key="n" class="border border-gray-100 rounded-lg p-4 space-y-2">
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Stat {{ n }}</label>
