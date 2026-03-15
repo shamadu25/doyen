@@ -100,6 +100,14 @@ function submitForgot() {
                         </p>
                     </div>
                 </div>
+
+                <!-- Create account -->
+                <div class="border-t pt-4 text-center">
+                    <p class="text-sm text-gray-500">Don't have an account?</p>
+                    <a :href="route('/customer/register')" class="mt-1 inline-block text-sm font-medium text-electric-600 hover:underline">
+                        Create an account
+                    </a>
+                </div>
             </div>
         </div>
     </div>
