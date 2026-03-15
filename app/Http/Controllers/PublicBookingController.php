@@ -10,6 +10,7 @@ use App\Mail\BookingSubmitted;
 use App\Services\VehicleDataGlobalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -78,6 +79,10 @@ class PublicBookingController extends Controller
             'customer_notes' => 'nullable|string|max:1000',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx|max:10240',
+
+            // Optional portal account creation
+            'create_account' => 'nullable|boolean',
+            'password' => 'required_if:create_account,1|nullable|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -163,6 +168,16 @@ class PublicBookingController extends Controller
                 'customer_notes' => $request->customer_notes,
             ]);
 
+            // Create customer portal account if requested
+            $accountCreated = false;
+            if ($request->boolean('create_account') && $request->filled('password')) {
+                if (!$customer->password) {
+                    $customer->update(['password' => Hash::make($request->password)]);
+                }
+                session(['customer_id' => $customer->id]);
+                $accountCreated = true;
+            }
+
             DB::commit();
 
             // Store any attachments
@@ -187,7 +202,8 @@ class PublicBookingController extends Controller
                 ]);
             }
 
-            return redirect()->route('booking.confirmation', $appointment->id);
+            return redirect()->route('booking.confirmation', $appointment->id)
+                ->with('account_created', $accountCreated);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -222,6 +238,8 @@ class PublicBookingController extends Controller
                 'status' => $appointment->status,
             ],
             'reference' => $appointment->reference_number,
+            'account_created' => (bool) session('account_created'),
+            'portal_url' => route('customer.dashboard'),
         ]);
     }
 
