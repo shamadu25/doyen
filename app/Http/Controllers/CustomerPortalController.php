@@ -73,7 +73,7 @@ class CustomerPortalController extends Controller
         // Get customer's data
         $appointments = Appointment::where('customer_id', $customer->id)
             ->with(['vehicle'])
-            ->orderBy('appointment_date', 'desc')
+            ->orderBy('scheduled_date', 'desc')
             ->take(10)
             ->get();
 
