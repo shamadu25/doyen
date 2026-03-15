@@ -201,6 +201,7 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerPortalController::class, 'showLogin'])->name('login');
     Route::post('/login', [CustomerPortalController::class, 'login'])->name('login.post');
+    Route::get('/registration', fn() => redirect('/customer/register', 301))->name('registration');
     Route::get('/register', [CustomerPortalController::class, 'showRegister'])->name('register');
     Route::post('/register', [CustomerPortalController::class, 'register'])->name('register.post');
     Route::get('/set-password', [CustomerPortalController::class, 'showSetPassword'])->name('set-password');
