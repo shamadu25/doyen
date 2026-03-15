@@ -609,16 +609,21 @@ class CustomerPortalController extends Controller
         $customer = Customer::where('email', $request->email)->first();
 
         if ($customer) {
-            // Generate a password reset token and send email
             $token = bin2hex(random_bytes(32));
             $customer->update(['password_reset_token' => $token]);
-            
-            // TODO: Send password reset email
-            
-            return back()->with('success', 'If an account exists with this email, you will receive password reset instructions.');
+            $link = url('/customer/set-password?token=' . $token . '&email=' . urlencode($customer->email));
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($customer->email)->send(
+                    new \App\Mail\CustomerPortalInvite($customer, $link)
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send customer password reset email', ['error' => $e->getMessage()]);
+            }
         }
 
-        return back()->with('success', 'If an account exists with this email, you will receive password reset instructions.');
+        // Always return the same message to prevent email enumeration
+        return back()->with('success', 'If an account exists with that email, you will receive a password reset link shortly.');
     }
 
     // ──────────────────────────────────────────

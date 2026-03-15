@@ -33,18 +33,22 @@ class SettingsController extends Controller
 
         return Inertia::render('Settings/Index', [
             'settings' => [
-                'garage_name'          => $settings['garage_name'] ?? 'Doyen Auto Services',
-                'address'              => $settings['address'] ?? '',
-                'city'                 => $settings['city'] ?? '',
-                'postcode'             => $settings['postcode'] ?? '',
-                'phone'                => $settings['phone'] ?? '',
-                'email'                => $settings['email'] ?? '',
-                'website'              => $settings['website'] ?? '',
-                'vat_number'           => $settings['vat_number'] ?? '',
-                'vat_rate'             => $settings['vat_rate'] ?? '20',
-                'default_labour_rate'  => $settings['default_labour_rate'] ?? '65.00',
-                'invoice_prefix'       => $settings['invoice_prefix'] ?? 'INV',
-                'invoice_terms'        => $settings['invoice_terms'] ?? 'Payment due within 30 days.',
+                'garage_name'           => $settings['garage_name'] ?? 'Doyen Auto Services',
+                'garage_address'        => $settings['address'] ?? '',
+                'garage_city'           => $settings['city'] ?? '',
+                'garage_postcode'       => $settings['postcode'] ?? '',
+                'garage_phone'          => $settings['phone'] ?? '',
+                'garage_email'          => $settings['email'] ?? '',
+                'garage_website'        => $settings['website'] ?? '',
+                'vat_number'            => $settings['vat_number'] ?? '',
+                'vat_rate'              => $settings['vat_rate'] ?? '20',
+                'mot_station_number'    => $settings['mot_station_number'] ?? '',
+                'default_labour_rate'   => $settings['default_labour_rate'] ?? '65.00',
+                'booking_slot_duration' => $settings['booking_slot_duration'] ?? '60',
+                'invoice_prefix'        => $settings['invoice_prefix'] ?? 'INV',
+                'invoice_terms'         => $settings['invoice_terms'] ?? 'Payment due within 30 days.',
+                'sms_enabled'           => $settings['sms_enabled'] ?? '0',
+                'email_notifications'   => $settings['email_notifications'] ?? '1',
             ],
             'bookingHours'  => $bookingHours,
             'closedDates'   => array_values($closedDates),
@@ -54,22 +58,37 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'garage_name'         => 'required|string|max:255',
-            'address'             => 'nullable|string|max:500',
-            'city'                => 'nullable|string|max:100',
-            'postcode'            => 'nullable|string|max:10',
-            'phone'               => 'nullable|string|max:20',
-            'email'               => 'nullable|email|max:255',
-            'website'             => 'nullable|url|max:255',
-            'vat_number'          => 'nullable|string|max:20',
-            'vat_rate'            => 'required|numeric|min:0|max:100',
-            'default_labour_rate' => 'required|numeric|min:0',
-            'invoice_prefix'      => 'nullable|string|max:10',
-            'invoice_terms'       => 'nullable|string|max:2000',
+            'garage_name'           => 'required|string|max:255',
+            'garage_address'        => 'nullable|string|max:500',
+            'garage_city'           => 'nullable|string|max:100',
+            'garage_postcode'       => 'nullable|string|max:10',
+            'garage_phone'          => 'nullable|string|max:20',
+            'garage_email'          => 'nullable|email|max:255',
+            'garage_website'        => 'nullable|string|max:255',
+            'vat_number'            => 'nullable|string|max:20',
+            'vat_rate'              => 'required|numeric|min:0|max:100',
+            'mot_station_number'    => 'nullable|string|max:20',
+            'default_labour_rate'   => 'required|numeric|min:0',
+            'booking_slot_duration' => 'nullable|integer|min:15|max:480',
+            'invoice_prefix'        => 'nullable|string|max:10',
+            'invoice_terms'         => 'nullable|string|max:2000',
+            'sms_enabled'           => 'nullable',
+            'email_notifications'   => 'nullable',
         ]);
 
+        // Map garage_-prefixed form keys to the plain DB storage keys
+        $keyMap = [
+            'garage_address'  => 'address',
+            'garage_city'     => 'city',
+            'garage_postcode' => 'postcode',
+            'garage_phone'    => 'phone',
+            'garage_email'    => 'email',
+            'garage_website'  => 'website',
+        ];
+
         foreach ($validated as $key => $value) {
-            Setting::set($key, $value, 'garage');
+            $storageKey = $keyMap[$key] ?? $key;
+            Setting::set($storageKey, $value ?? '', 'garage');
         }
 
         if ($request->hasFile('logo')) {

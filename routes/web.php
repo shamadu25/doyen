@@ -205,6 +205,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::post('/register', [CustomerPortalController::class, 'register'])->name('register.post');
     Route::get('/set-password', [CustomerPortalController::class, 'showSetPassword'])->name('set-password');
     Route::post('/set-password', [CustomerPortalController::class, 'setPassword'])->name('set-password.post');
+    Route::post('/forgot-password', [CustomerPortalController::class, 'forgotPassword'])->name('forgot-password');
     Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/appointments', [CustomerPortalController::class, 'appointments'])->name('appointments');

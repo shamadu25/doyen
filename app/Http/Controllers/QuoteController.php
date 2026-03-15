@@ -160,25 +160,12 @@ class QuoteController extends Controller
     }
 
     /**
-     * Send quote to customer (legacy — direct notification without review token)
+     * Send quote to customer — delegates to sendForReview so the customer
+     * always receives the secure approve/decline link.
      */
     public function send(Quote $quote)
     {
-        if ($quote->status === 'converted') {
-            return back()->with('error', 'Cannot send a converted quote.');
-        }
-
-        $quote->update(['status' => 'sent']);
-
-        // Send email
-        Mail::to($quote->customer->email)->send(new QuoteCreated($quote));
-
-        // Send SMS if enabled
-        if ($this->smsService->isEnabled()) {
-            $this->smsService->sendQuoteNotification($quote);
-        }
-
-        return back()->with('success', 'Quote sent to customer successfully.');
+        return $this->sendForReview($quote);
     }
 
     /**

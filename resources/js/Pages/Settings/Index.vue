@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, useForm, router } from '@inertiajs/vue3'
-import { inject, ref, reactive } from 'vue'
+import { Head, useForm, router, usePage } from '@inertiajs/vue3'
+import { inject, ref, reactive, computed } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 type DayConfig = { open: boolean; start: string; end: string }
@@ -92,6 +92,8 @@ function removeClosedDate(date: string) {
 function formatDate(d: string) {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+const flash = computed(() => (usePage().props.flash as any) ?? {})
 </script>
 
 <template>
@@ -101,6 +103,17 @@ function formatDate(d: string) {
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
                 <p class="mt-1 text-sm text-gray-500">Configure your garage system</p>
+            </div>
+
+            <!-- Flash messages -->
+            <div v-if="flash.success" class="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-green-800 text-sm">
+                {{ flash.success }}
+            </div>
+            <div v-if="flash.error" class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-800 text-sm">
+                {{ flash.error }}
+            </div>
+            <div v-if="Object.keys(form.errors).length" class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-800 text-sm space-y-1">
+                <p v-for="(msg, field) in form.errors" :key="String(field)">{{ msg }}</p>
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
@@ -134,7 +147,7 @@ function formatDate(d: string) {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                            <input v-model="form.garage_website" type="url" class="w-full rounded-lg border-gray-300 text-sm" />
+                            <input v-model="form.garage_website" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="https://example.com" />
                         </div>
                     </div>
                 </div>

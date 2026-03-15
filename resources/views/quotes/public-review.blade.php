@@ -43,7 +43,7 @@
         table { width:100%; border-collapse:collapse; font-size:14px; }
         th { background:#1e40af; color:#fff; padding:10px 12px; text-align:left; font-size:12px; font-weight:600; }
         th:last-child, td:last-child { text-align:right; }
-        th:nth-child(2), th:nth-child(3), td:nth-child(2), td:nth-child(3) { text-align:center; }
+        th:nth-child(2), th:nth-child(3), th:nth-child(4), td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align:right; }
         td { padding:10px 12px; border-bottom:1px solid #f1f5f9; }
         tr:nth-child(even) td { background:#f8fafc; }
         .item-type { font-size:10px; font-weight:700; text-transform:uppercase; color:#94a3b8; }
@@ -179,6 +179,7 @@
                         <th>Description</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
+                        <th>VAT ({{ $quote->vat_rate }}%)</th>
                         <th>Total</th>
                     </tr>
                 </thead>
@@ -191,6 +192,7 @@
                         </td>
                         <td>{{ $item->quantity }}</td>
                         <td>£{{ number_format($item->unit_price, 2) }}</td>
+                        <td>£{{ number_format($item->total_price * ($quote->vat_rate / 100), 2) }}</td>
                         <td>£{{ number_format($item->total_price, 2) }}</td>
                     </tr>
                     @endforeach
@@ -198,20 +200,20 @@
                 <tfoot>
                     @if($quote->discount_amount > 0)
                     <tr>
-                        <td colspan="3" style="text-align:right;color:#64748b;">Subtotal</td>
+                        <td colspan="4" style="text-align:right;color:#64748b;">Subtotal</td>
                         <td>£{{ number_format($quote->subtotal, 2) }}</td>
                     </tr>
                     <tr>
-                        <td colspan="3" style="text-align:right;color:#dc2626;">Discount ({{ $quote->discount_percentage }}%)</td>
+                        <td colspan="4" style="text-align:right;color:#dc2626;">Discount ({{ $quote->discount_percentage }}%)</td>
                         <td style="color:#dc2626;">−£{{ number_format($quote->discount_amount, 2) }}</td>
                     </tr>
                     @endif
                     <tr>
-                        <td colspan="3" style="text-align:right;color:#64748b;">VAT ({{ $quote->vat_rate }}%)</td>
+                        <td colspan="4" style="text-align:right;color:#64748b;">VAT ({{ $quote->vat_rate }}%)</td>
                         <td>£{{ number_format($quote->vat_amount, 2) }}</td>
                     </tr>
                     <tr class="total-row">
-                        <td colspan="3" style="text-align:right;">Total</td>
+                        <td colspan="4" style="text-align:right;">Total</td>
                         <td>£{{ number_format($quote->total_amount, 2) }}</td>
                     </tr>
                 </tfoot>

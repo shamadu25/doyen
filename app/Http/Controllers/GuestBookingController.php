@@ -159,25 +159,51 @@ class GuestBookingController extends Controller
 
     private function getAvailableSlots(): array
     {
-        // Return next 14 days of available time slots
+        // Load configurable booking hours from settings
+        $rawHours = \App\Models\Setting::get('booking_hours');
+        $bookingHours = $rawHours ? json_decode($rawHours, true) : [
+            'monday'    => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+            'tuesday'   => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+            'wednesday' => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+            'thursday'  => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+            'friday'    => ['open' => true,  'start' => '08:00', 'end' => '17:00'],
+            'saturday'  => ['open' => true,  'start' => '09:00', 'end' => '13:00'],
+            'sunday'    => ['open' => false, 'start' => '09:00', 'end' => '12:00'],
+        ];
+
+        $rawClosed = \App\Models\Setting::get('booking_closed_dates', '[]');
+        $closedDates = json_decode($rawClosed, true) ?? [];
+
         $slots = [];
-        $startDate = now()->startOfDay();
-        
-        for ($i = 0; $i < 14; $i++) {
-            $date = $startDate->copy()->addDays($i);
-            
-            // Skip weekends (optional - adjust based on business hours)
-            if ($date->dayOfWeek === 0) { // Sunday
-                continue;
+
+        for ($i = 1; $i <= 14; $i++) {
+            $date    = now()->addDays($i);
+            $dateStr = $date->format('Y-m-d');
+            $dayName = strtolower($date->format('l'));
+
+            if (in_array($dateStr, $closedDates, true)) continue;
+
+            $dayConfig = $bookingHours[$dayName] ?? ['open' => false];
+            if (empty($dayConfig['open'])) continue;
+
+            $start  = \Carbon\Carbon::createFromFormat('H:i', $dayConfig['start'] ?? '09:00');
+            $end    = \Carbon\Carbon::createFromFormat('H:i', $dayConfig['end']   ?? '17:00');
+            $cursor = $start->copy();
+            $times  = [];
+            while ($cursor->lt($end)) {
+                $times[] = $cursor->format('H:i');
+                $cursor->addMinutes(30);
             }
-            
-            $slots[] = [
-                'date' => $date->format('Y-m-d'),
-                'day_name' => $date->format('l'),
-                'available' => true,
-            ];
+
+            if (!empty($times)) {
+                $slots[] = [
+                    'date'      => $dateStr,
+                    'day_name'  => $date->format('l'),
+                    'available' => true,
+                ];
+            }
         }
-        
+
         return $slots;
     }
 

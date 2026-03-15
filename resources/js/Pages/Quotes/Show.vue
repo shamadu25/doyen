@@ -46,8 +46,7 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                 </div>
                 <div class="flex items-center gap-2 flex-wrap justify-end">
                     <StatusBadge :status="q.status" />
-                    <button v-if="q.status === 'draft' || q.status === 'sent'" @click="sendQuote" class="px-3 py-1.5 text-sm bg-electric-600 text-white rounded-lg hover:bg-electric-700">Send to Customer</button>
-                    <button v-if="q.status === 'draft' || q.status === 'sent'" @click="sendForReview" class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">📧 Send for Review &amp; Approval</button>
+                    <button v-if="q.status === 'draft' || q.status === 'sent'" @click="sendForReview" class="px-3 py-1.5 text-sm bg-electric-600 text-white rounded-lg hover:bg-electric-700">📧 Send to Customer for Approval</button>
                     <button v-if="q.status === 'sent'" @click="approveQuote" class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">Approve</button>
                     <button v-if="q.status === 'sent'" @click="declineQuote" class="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Decline</button>
                     <button v-if="q.status === 'approved'" @click="convertQuote" class="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">Convert to Job Card</button>
@@ -92,6 +91,7 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                             <th class="text-left px-4 py-2 font-medium text-gray-600">Description</th>
                             <th class="text-right px-4 py-2 font-medium text-gray-600">Qty</th>
                             <th class="text-right px-4 py-2 font-medium text-gray-600">Unit Price</th>
+                            <th class="text-right px-4 py-2 font-medium text-gray-600">VAT ({{ q.vat_rate }}%)</th>
                             <th class="text-right px-4 py-2 font-medium text-gray-600">Subtotal</th>
                         </tr>
                     </thead>
@@ -103,6 +103,7 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                             <td class="px-4 py-3 text-gray-900">{{ item.description }}</td>
                             <td class="px-4 py-3 text-right text-gray-700">{{ item.quantity }}</td>
                             <td class="px-4 py-3 text-right text-gray-700">{{ fmt(item.unit_price) }}</td>
+                            <td class="px-4 py-3 text-right text-gray-500">{{ fmt(item.quantity * item.unit_price * (q.vat_rate / 100)) }}</td>
                             <td class="px-4 py-3 text-right font-medium text-gray-900">{{ fmt(item.quantity * item.unit_price) }}</td>
                         </tr>
                     </tbody>
