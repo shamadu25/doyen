@@ -180,7 +180,7 @@ class AppointmentController extends Controller
             'priority' => 'normal',
             'mileage_in' => $booking->vehicle?->mileage,
             'date_in' => now(),
-            'work_required' => $booking->notes,
+            'work_required' => $booking->description,
         ]);
 
         $booking->update(['status' => 'in_progress']);
