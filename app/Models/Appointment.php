@@ -83,6 +83,11 @@ class Appointment extends Model
         return $this->hasOne(JobCard::class);
     }
 
+    public function quote()
+    {
+        return $this->hasOne(Quote::class);
+    }
+
     public function getReferenceAttribute(): ?string
     {
         return $this->reference_number;

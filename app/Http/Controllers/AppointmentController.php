@@ -6,9 +6,12 @@ use App\Http\Requests\BookingRequest;
 use App\Mail\AppointmentCancelled;
 use App\Mail\AppointmentConfirmation;
 use App\Mail\AppointmentRescheduled;
+use App\Mail\QuoteReviewRequest;
 use App\Models\ActivityLog;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
@@ -97,7 +100,7 @@ class AppointmentController extends Controller
 
     public function show(Appointment $booking)
     {
-        $booking->load(['customer', 'vehicle', 'assignedTo', 'jobCard']);
+        $booking->load(['customer', 'vehicle', 'assignedTo', 'jobCard', 'quote']);
         return Inertia::render('Bookings/Show', ['booking' => $booking]);
     }
 
@@ -280,4 +283,73 @@ class AppointmentController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Generate a quote from a booking request and send it to the client for review.
+     * The booking is held in 'pending_quote' status until the client approves or declines.
+     */
+    public function generateQuote(Request $request, Appointment $booking)
+    {
+        $request->validate([
+            'items'              => 'required|array|min:1',
+            'items.*.item_type'  => 'required|in:service,part,labour',
+            'items.*.description'=> 'required|string|max:500',
+            'items.*.quantity'   => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'notes'              => 'nullable|string|max:2000',
+            'validity_days'      => 'nullable|integer|min:1|max:365',
+            'discount_percentage'=> 'nullable|numeric|min:0|max:100',
+        ]);
+
+        // Only one active quote per booking
+        if ($booking->quote && in_array($booking->quote->status, ['sent', 'approved'])) {
+            return back()->with('error', 'This booking already has an active quote. Decline or expire it first.');
+        }
+
+        $booking->load('customer', 'vehicle');
+
+        $quote = Quote::create([
+            'customer_id'         => $booking->customer_id,
+            'vehicle_id'          => $booking->vehicle_id,
+            'appointment_id'      => $booking->id,
+            'quote_date'          => now()->toDateString(),
+            'validity_days'       => $request->input('validity_days', 14),
+            'status'              => 'draft',
+            'description'         => $booking->description ?? $booking->appointment_type,
+            'notes'               => $request->input('notes'),
+            'discount_percentage' => $request->input('discount_percentage', 0),
+        ]);
+
+        foreach ($request->input('items') as $itemData) {
+            QuoteItem::create([
+                'quote_id'    => $quote->id,
+                'item_type'   => $itemData['item_type'],
+                'service_id'  => $itemData['service_id'] ?? null,
+                'part_id'     => $itemData['part_id'] ?? null,
+                'description' => $itemData['description'],
+                'quantity'    => $itemData['quantity'],
+                'unit_price'  => $itemData['unit_price'],
+            ]);
+        }
+
+        $quote->calculateTotals();
+        $token = $quote->generateReviewToken();
+
+        // Update booking status to pending_quote
+        $booking->update(['status' => 'pending_quote']);
+
+        // Send the quote review email to the customer
+        $reviewUrl = route('quote.review', $token);
+        try {
+            Mail::to($booking->customer->email)
+                ->send(new QuoteReviewRequest($quote, $reviewUrl));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send quote review email', ['error' => $e->getMessage()]);
+        }
+
+        ActivityLog::log('quote_generated', "Quote {$quote->quote_number} generated from booking {$booking->reference_number} and sent for review", $booking);
+
+        return back()->with('success', "Quote {$quote->quote_number} sent to {$booking->customer->full_name} for review and approval.");
+    }
 }
+

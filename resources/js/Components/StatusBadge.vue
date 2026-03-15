@@ -9,16 +9,23 @@ const props = withDefaults(defineProps<{
 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
     // Booking statuses
     pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
+    pending_quote: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Pending Quote' },
     confirmed: { bg: 'bg-electric-100', text: 'text-electric-700', label: 'Confirmed' },
     in_progress: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'In Progress' },
     completed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Completed' },
     cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' },
+    reschedule_pending: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Reschedule Pending' },
     // Job Card statuses
     awaiting_parts: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Awaiting Parts' },
     invoiced: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Invoiced' },
-    // Invoice statuses
+    // Invoice & Quote statuses
     draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
     sent: { bg: 'bg-electric-100', text: 'text-electric-700', label: 'Sent' },
+    approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
+    declined: { bg: 'bg-red-100', text: 'text-red-800', label: 'Declined' },
+    expired: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Expired' },
+    converted: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Converted' },
+    // Payment statuses
     paid: { bg: 'bg-green-100', text: 'text-green-800', label: 'Paid' },
     partial: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Partial' },
     overdue: { bg: 'bg-red-100', text: 'text-red-800', label: 'Overdue' },

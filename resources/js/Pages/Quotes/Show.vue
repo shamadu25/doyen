@@ -22,6 +22,7 @@ const statusColor: Record<string, string> = {
 }
 
 function sendQuote() { if (confirm('Send quote to customer?')) router.post(route(`/quotes/${q.value.id}/send`)) }
+function sendForReview() { if (confirm('Send this quote to the customer for review and approval? They will receive an email with a secure link to approve or decline.')) router.post(route(`/quotes/${q.value.id}/send-for-review`)) }
 function approveQuote() { if (confirm('Mark as approved?')) router.post(route(`/quotes/${q.value.id}/approve`)) }
 function declineQuote() { if (confirm('Mark as declined?')) router.post(route(`/quotes/${q.value.id}/decline`)) }
 function convertQuote() { if (confirm('Convert to Job Card?')) router.post(route(`/quotes/${q.value.id}/convert`)) }
@@ -46,6 +47,7 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                 <div class="flex items-center gap-2 flex-wrap justify-end">
                     <StatusBadge :status="q.status" />
                     <button v-if="q.status === 'draft' || q.status === 'sent'" @click="sendQuote" class="px-3 py-1.5 text-sm bg-electric-600 text-white rounded-lg hover:bg-electric-700">Send to Customer</button>
+                    <button v-if="q.status === 'draft' || q.status === 'sent'" @click="sendForReview" class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">📧 Send for Review &amp; Approval</button>
                     <button v-if="q.status === 'sent'" @click="approveQuote" class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">Approve</button>
                     <button v-if="q.status === 'sent'" @click="declineQuote" class="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Decline</button>
                     <button v-if="q.status === 'approved'" @click="convertQuote" class="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">Convert to Job Card</button>

@@ -21,7 +21,8 @@ const garagePostcode = computed(() => garage.value.postcode || 'G73 1UG')
 const garageTelHref  = computed(() => 'tel:+44' + garagePhone.value.replace(/\s/g, '').replace(/^0/, ''))
 const garageMailHref = computed(() => 'mailto:' + garageEmail.value)
 const whatsappHref   = computed(() => {
-    const raw = garagePhone.value.replace(/\s/g, '').replace(/^\+/, '').replace(/^0/, '44')
+    const num = garage.value.whatsapp_number || garagePhone.value
+    const raw = num.replace(/\s/g, '').replace(/^\+/, '').replace(/^0/, '44')
     return `https://wa.me/${raw}?text=Hello%2C%20I%20would%20like%20to%20enquire%20about%20your%20services.`
 })
 

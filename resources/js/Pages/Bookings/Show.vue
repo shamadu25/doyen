@@ -34,6 +34,13 @@ interface JobCard {
     status: string
 }
 
+interface QuoteSummary {
+    id: number
+    quote_number: string
+    status: string
+    total_amount: number
+}
+
 interface Booking {
     id: number
     reference: string
@@ -49,6 +56,7 @@ interface Booking {
     customer_notes: string | null
     internal_notes: string | null
     job_card: JobCard | null
+    quote: QuoteSummary | null
     created_at: string
     updated_at: string
     proposed_date: string | null
@@ -121,16 +129,18 @@ function deleteBooking() {
 }
 
 const isPending = props.booking.status === 'pending'
+const isPendingQuote = props.booking.status === 'pending_quote'
 const isConfirmed = props.booking.status === 'confirmed'
 const isInProgress = props.booking.status === 'in_progress'
 const isCancelled = props.booking.status === 'cancelled'
 const isCompleted = props.booking.status === 'completed'
 const isReschedulePending = props.booking.status === 'reschedule_pending'
-const canConfirm = isPending
-const canCancel = isPending || isConfirmed
+const canConfirm = isPending || isPendingQuote
+const canCancel = isPending || isPendingQuote || isConfirmed
 const canComplete = isConfirmed || isInProgress
 const canConvertToJobCard = (isConfirmed || isPending) && !props.booking.job_card
 const canReschedule = !isCancelled && !isCompleted && !isReschedulePending
+const canGenerateQuote = (isPending || isPendingQuote) && !props.booking.quote?.status?.match(/^(sent|approved|converted)$/)
 
 // Reschedule form
 const showRescheduleForm = ref(false)
@@ -144,6 +154,54 @@ function submitReschedule() {
         onSuccess: () => {
             showRescheduleForm.value = false
             rescheduleForm.reset()
+        }
+    })
+}
+
+// Quote generation form
+const showQuoteForm = ref(false)
+
+interface QuoteItem {
+    item_type: 'service' | 'part' | 'labour'
+    description: string
+    quantity: number
+    unit_price: number
+}
+
+const quoteForm = useForm<{
+    items: QuoteItem[]
+    notes: string
+    validity_days: number
+    discount_percentage: number
+}>({
+    items: [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0 }],
+    notes: '',
+    validity_days: 14,
+    discount_percentage: 0,
+})
+
+function addQuoteItem() {
+    quoteForm.items.push({ item_type: 'labour', description: '', quantity: 1, unit_price: 0 })
+}
+
+function removeQuoteItem(idx: number) {
+    quoteForm.items.splice(idx, 1)
+}
+
+const quoteTotal = computed(() => {
+    const sub = quoteForm.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0)
+    const disc = sub * (quoteForm.discount_percentage / 100)
+    const afterDisc = sub - disc
+    const vat = afterDisc * 0.20
+    return { subtotal: sub, discount: disc, vat, total: afterDisc + vat }
+})
+
+function submitQuote() {
+    quoteForm.post(route(`/bookings/${props.booking.id}/generate-quote`), {
+        onSuccess: () => {
+            showQuoteForm.value = false
+            quoteForm.reset()
+            quoteForm.items = [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0 }]
         }
     })
 }
@@ -268,6 +326,112 @@ function submitReschedule() {
                                 </Link>
                             </div>
                         </div>
+
+                        <!-- Related Quote -->
+                        <div v-if="booking.quote" class="rounded-xl bg-white p-6 shadow-sm">
+                            <h3 class="mb-4 text-lg font-semibold text-gray-900">Quote</h3>
+                            <div class="flex items-center justify-between rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ booking.quote.quote_number }}</p>
+                                    <StatusBadge :status="booking.quote.status" class="mt-1" />
+                                    <p class="text-sm text-gray-600 mt-1">Total: £{{ parseFloat(String(booking.quote.total_amount)).toFixed(2) }}</p>
+                                </div>
+                                <Link
+                                    :href="route(`/quotes/${booking.quote.id}`)"
+                                    class="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-200 transition"
+                                >
+                                    View Quote
+                                    <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        </div>
+
+                        <!-- Generate Quote Form (inline) -->
+                        <div v-if="showQuoteForm" class="rounded-xl bg-white p-6 shadow-sm border border-indigo-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900">Generate Quote</h3>
+                                <button @click="showQuoteForm = false" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4">Add line items below. The quote will be emailed to the customer with a secure link to approve or decline.</p>
+
+                            <!-- Line Items -->
+                            <div class="space-y-3 mb-4">
+                                <div v-for="(item, idx) in quoteForm.items" :key="idx" class="grid grid-cols-12 gap-2 items-start bg-gray-50 p-3 rounded-lg">
+                                    <div class="col-span-2">
+                                        <label class="block text-xs text-gray-500 mb-1">Type</label>
+                                        <select v-model="item.item_type" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="labour">Labour</option>
+                                            <option value="service">Service</option>
+                                            <option value="part">Part</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-5">
+                                        <label class="block text-xs text-gray-500 mb-1">Description</label>
+                                        <input v-model="item.description" type="text" placeholder="e.g. Oil & Filter Change" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs text-gray-500 mb-1">Qty</label>
+                                        <input v-model.number="item.quantity" type="number" min="1" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs text-gray-500 mb-1">Unit £</label>
+                                        <input v-model.number="item.unit_price" type="number" min="0" step="0.01" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <div class="col-span-1 pt-5">
+                                        <button @click="removeQuoteItem(idx)" :disabled="quoteForm.items.length === 1" class="text-red-400 hover:text-red-600 disabled:opacity-30">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button @click="addQuoteItem" type="button" class="mb-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Add Item
+                            </button>
+
+                            <!-- Options row -->
+                            <div class="grid grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Discount %</label>
+                                    <input v-model.number="quoteForm.discount_percentage" type="number" min="0" max="100" step="0.5" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Valid (days)</label>
+                                    <input v-model.number="quoteForm.validity_days" type="number" min="1" max="365" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Notes (optional)</label>
+                                <textarea v-model="quoteForm.notes" rows="2" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Any notes for the customer…"></textarea>
+                            </div>
+
+                            <!-- Live total preview -->
+                            <div class="rounded-lg bg-indigo-50 p-3 text-sm space-y-1 mb-4">
+                                <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>£{{ quoteTotal.subtotal.toFixed(2) }}</span></div>
+                                <div v-if="quoteTotal.discount > 0" class="flex justify-between text-red-600"><span>Discount</span><span>−£{{ quoteTotal.discount.toFixed(2) }}</span></div>
+                                <div class="flex justify-between text-gray-600"><span>VAT (20%)</span><span>£{{ quoteTotal.vat.toFixed(2) }}</span></div>
+                                <div class="flex justify-between font-bold text-gray-900 border-t border-indigo-200 pt-1"><span>Total</span><span>£{{ quoteTotal.total.toFixed(2) }}</span></div>
+                            </div>
+
+                            <div v-if="quoteForm.errors && Object.keys(quoteForm.errors).length" class="mb-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                                <p v-for="(msg, field) in quoteForm.errors" :key="field">{{ msg }}</p>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button @click="submitQuote" :disabled="quoteForm.processing" class="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition">
+                                    {{ quoteForm.processing ? 'Sending…' : '📧 Send Quote to Customer' }}
+                                </button>
+                                <button @click="showQuoteForm = false; quoteForm.clearErrors()" type="button" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Sidebar -->
@@ -334,6 +498,24 @@ function submitReschedule() {
                                         Proposed: {{ booking.proposed_date }} at {{ booking.proposed_time }}
                                     </p>
                                 </div>
+
+                                <!-- Pending Quote Notice -->
+                                <div v-if="isPendingQuote" class="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm">
+                                    <p class="font-medium text-blue-800">📋 Awaiting quote approval</p>
+                                    <p class="text-blue-700 mt-1">A quote has been sent to the customer for review. Booking will be confirmed once approved.</p>
+                                </div>
+
+                                <!-- Generate & Send Quote Button -->
+                                <button
+                                    v-if="canGenerateQuote && !showQuoteForm"
+                                    @click="showQuoteForm = true"
+                                    class="flex w-full items-center justify-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
+                                >
+                                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Generate &amp; Send Quote
+                                </button>
 
                                 <!-- Propose New Time Button -->
                                 <button

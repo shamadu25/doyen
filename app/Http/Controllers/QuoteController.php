@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Part;
 use App\Services\SmsService;
 use App\Mail\QuoteCreated;
+use App\Mail\QuoteReviewRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
@@ -159,7 +160,7 @@ class QuoteController extends Controller
     }
 
     /**
-     * Send quote to customer
+     * Send quote to customer (legacy — direct notification without review token)
      */
     public function send(Quote $quote)
     {
@@ -178,6 +179,37 @@ class QuoteController extends Controller
         }
 
         return back()->with('success', 'Quote sent to customer successfully.');
+    }
+
+    /**
+     * Send quote to customer for review and approval via a secure token link.
+     */
+    public function sendForReview(Quote $quote)
+    {
+        if (in_array($quote->status, ['approved', 'converted'])) {
+            return back()->with('error', 'Cannot send an approved or converted quote for review.');
+        }
+
+        if (! $quote->review_token) {
+            $quote->generateReviewToken();
+            $quote->refresh();
+        }
+
+        $quote->update(['status' => 'sent']);
+
+        $reviewUrl = route('quote.review', $quote->review_token);
+
+        try {
+            Mail::to($quote->customer->email)->send(new QuoteReviewRequest($quote, $reviewUrl));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send quote review request email', ['error' => $e->getMessage()]);
+        }
+
+        if ($this->smsService->isEnabled()) {
+            $this->smsService->sendQuoteNotification($quote);
+        }
+
+        return back()->with('success', 'Quote sent to customer for review and approval.');
     }
 
     /**

@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                 'invoice_terms' => $settings['invoice_terms'] ?? 'Payment due within 30 days.',
                 'website' => $settings['website'] ?? '',
                 'google_review_link' => env('GOOGLE_REVIEW_LINK', 'https://maps.app.goo.gl/dKnuaDHKtwtaHw3u5'),
+                'whatsapp_number' => $settings['whatsapp_number'] ?? '',
             ];
         } catch (\Exception $e) {
             return [
@@ -78,6 +79,7 @@ class HandleInertiaRequests extends Middleware
                 'invoice_terms' => 'Payment due within 30 days.',
                 'website' => '',
                 'google_review_link' => env('GOOGLE_REVIEW_LINK', 'https://maps.app.goo.gl/dKnuaDHKtwtaHw3u5'),
+                'whatsapp_number' => '',
             ];
         }
     }

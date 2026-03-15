@@ -15,10 +15,12 @@ class Quote extends Model
         'quote_number',
         'customer_id',
         'vehicle_id',
+        'appointment_id',
         'quote_date',
         'valid_until',
         'validity_days',
         'status',
+        'review_token',
         'description',
         'notes',
         'terms',
@@ -83,6 +85,21 @@ class Quote extends Model
     public function jobCard()
     {
         return $this->belongsTo(JobCard::class, 'converted_to_job_card_id');
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(Appointment::class);
+    }
+
+    /**
+     * Generate and assign a secure review token.
+     */
+    public function generateReviewToken(): string
+    {
+        $token = \Illuminate\Support\Str::random(48);
+        $this->update(['review_token' => $token]);
+        return $token;
     }
 
     /**

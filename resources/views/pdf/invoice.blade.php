@@ -44,12 +44,12 @@
         <tr>
             <td style="border: none; padding: 0; width: 50%; vertical-align: top;">
                 <div class="company-info">
-                    <h1>🔧 Doyen Auto Services</h1>
-                    <p>59 Southcroft Road</p>
-                    <p>Rutherglen, Glasgow G73 1UG</p>
-                    <p>Tel: +44 141 482 0726</p>
-                    <p>Email: info@doyenautos.co.uk</p>
-                    @if(config('garage.vat_number'))<p>VAT No: {{ config('garage.vat_number') }}</p>@endif
+                    <h1>{{ $garage['garage_name'] ?? 'Doyen Auto Services' }}</h1>
+                    @if(!empty($garage['address']))<p>{{ $garage['address'] }}</p>@endif
+                    @if(!empty($garage['city']) || !empty($garage['postcode']))<p>{{ trim(($garage['city'] ?? '') . ' ' . ($garage['postcode'] ?? '')) }}</p>@endif
+                    @if(!empty($garage['phone']))<p>Tel: {{ $garage['phone'] }}</p>@endif
+                    @if(!empty($garage['email']))<p>Email: {{ $garage['email'] }}</p>@endif
+                    @if(!empty($garage['vat_number']))<p>VAT No: {{ $garage['vat_number'] }}</p>@endif
                 </div>
             </td>
             <td style="border: none; padding: 0; width: 50%; vertical-align: top; text-align: right;">
@@ -97,7 +97,7 @@
             @foreach(($invoice->items ?? $invoice->invoiceItems ?? []) as $item)
             <tr>
                 <td>{{ $item->description }}</td>
-                <td style="text-transform: capitalize;">{{ $item->type ?? '-' }}</td>
+                <td style="text-transform: capitalize;">{{ $item->item_type ?? '-' }}</td>
                 <td style="text-align: right;">{{ $item->quantity }}</td>
                 <td style="text-align: right;">&pound;{{ number_format($item->unit_price, 2) }}</td>
                 <td style="text-align: right;">&pound;{{ number_format($item->quantity * $item->unit_price, 2) }}</td>
@@ -114,7 +114,7 @@
                 <td class="amount">&pound;{{ number_format($invoice->subtotal, 2) }}</td>
             </tr>
             <tr>
-                <td class="label">VAT (20%):</td>
+                <td class="label">VAT:</td>
                 <td class="amount">&pound;{{ number_format($invoice->vat_amount ?? $invoice->tax_amount ?? 0, 2) }}</td>
             </tr>
             <tr class="total">
@@ -142,7 +142,7 @@
 
     <!-- Footer -->
     <div class="footer">
-        <p>Doyen Auto Services &bull; 59 Southcroft Road, Rutherglen, Glasgow G73 1UG &bull; Tel: +44 7760 926245</p>
+        <p>{{ $garage['garage_name'] ?? 'Doyen Auto Services' }}@if(!empty($garage['address'])) &bull; {{ $garage['address'] }}@endif@if(!empty($garage['city'])) {{ $garage['city'] }}@endif@if(!empty($garage['postcode'])) {{ $garage['postcode'] }}@endif@if(!empty($garage['phone'])) &bull; Tel: {{ $garage['phone'] }}@endif</p>
         <p>Thank you for your business</p>
     </div>
 </div>

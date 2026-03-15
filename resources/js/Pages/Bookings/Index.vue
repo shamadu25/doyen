@@ -80,10 +80,12 @@ const serviceTypes = [
 const statuses = [
     { value: '', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
+    { value: 'pending_quote', label: 'Pending Quote' },
     { value: 'confirmed', label: 'Confirmed' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
     { value: 'cancelled', label: 'Cancelled' },
+    { value: 'reschedule_pending', label: 'Reschedule Pending' },
 ]
 
 function applyFilters() {
