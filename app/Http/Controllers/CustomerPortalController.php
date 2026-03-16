@@ -195,10 +195,35 @@ class CustomerPortalController extends Controller
 
         $customer = Customer::findOrFail(session('customer_id'));
         $invoices = Invoice::where('customer_id', $customer->id)
+            ->whereNotIn('status', ['draft'])
             ->orderBy('invoice_date', 'desc')
             ->paginate(15);
 
         return Inertia::render('CustomerPortal/Invoices', ['customer' => $customer, 'invoices' => $invoices]);
+    }
+
+    /**
+     * Download an invoice PDF (customer-facing)
+     */
+    public function downloadInvoice(\App\Models\Invoice $invoice)
+    {
+        if (!session('customer_id')) return redirect()->route('customer.login');
+        $customer = \App\Models\Customer::findOrFail(session('customer_id'));
+
+        // Ensure invoice belongs to this customer and is not a draft
+        if ($invoice->customer_id !== $customer->id || $invoice->status === 'draft') {
+            abort(403);
+        }
+
+        $invoice->load(['customer', 'vehicle', 'items']);
+        $garageSettings = \App\Models\Setting::getAllSettings();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
+            'invoice' => $invoice,
+            'garage'  => $garageSettings,
+        ]);
+
+        return $pdf->download("Invoice-{$invoice->invoice_number}.pdf");
     }
 
     /**
