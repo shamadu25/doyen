@@ -142,7 +142,13 @@
 
     <!-- Footer -->
     <div class="footer">
-        <p>{{ $garage['garage_name'] ?? 'Doyen Auto Services' }}@if(!empty($garage['address'])) &bull; {{ $garage['address'] }}@endif@if(!empty($garage['city'])) {{ $garage['city'] }}@endif@if(!empty($garage['postcode'])) {{ $garage['postcode'] }}@endif@if(!empty($garage['phone'])) &bull; Tel: {{ $garage['phone'] }}@endif</p>
+        <p>
+            {{ $garage['garage_name'] ?? 'Doyen Auto Services' }}
+            @if(!empty($garage['address'])) &bull; {{ $garage['address'] }} @endif
+            @if(!empty($garage['city'])) {{ $garage['city'] }} @endif
+            @if(!empty($garage['postcode'])) {{ $garage['postcode'] }} @endif
+            @if(!empty($garage['phone'])) &bull; Tel: {{ $garage['phone'] }} @endif
+        </p>
         <p>Thank you for your business</p>
     </div>
 </div>

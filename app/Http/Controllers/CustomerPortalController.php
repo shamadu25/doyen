@@ -353,7 +353,9 @@ class CustomerPortalController extends Controller
         $customer = Customer::findOrFail(session('customer_id'));
 
         $vehicles  = Vehicle::where('customer_id', $customer->id)->get();
-        $services  = \App\Models\Service::where('is_active', true)->orderBy('name')->get(['id', 'name', 'category', 'estimated_duration_minutes', 'price']);
+        $services  = \App\Models\Service::where('is_active', true)->orderBy('name')
+            ->selectRaw('id, name, category, estimated_duration_minutes, default_price as price');
+        $services  = $services->get();
 
         return Inertia::render('CustomerPortal/BookAppointment', [
             'customer' => $customer,
