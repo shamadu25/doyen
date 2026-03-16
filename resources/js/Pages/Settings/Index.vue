@@ -22,6 +22,14 @@ const props = defineProps<{
         booking_slot_duration: string
         invoice_prefix: string
         invoice_terms: string
+        invoice_due_days: string
+        invoice_bank_name: string
+        invoice_sort_code: string
+        invoice_account_number: string
+        invoice_account_name: string
+        invoice_company_number: string
+        invoice_footer_note: string
+        invoice_late_payment: string
         sms_enabled: string
         email_notifications: string
     }
@@ -45,7 +53,15 @@ const form = useForm({
     default_labour_rate: props.settings.default_labour_rate || '65.00',
     booking_slot_duration: props.settings.booking_slot_duration || '60',
     invoice_prefix: props.settings.invoice_prefix || 'INV-',
-    invoice_terms: props.settings.invoice_terms || 'Payment due within 30 days.',
+    invoice_terms: props.settings.invoice_terms || 'Payment due within 30 days of invoice date.',
+    invoice_due_days: props.settings.invoice_due_days || '30',
+    invoice_bank_name: props.settings.invoice_bank_name || '',
+    invoice_sort_code: props.settings.invoice_sort_code || '',
+    invoice_account_number: props.settings.invoice_account_number || '',
+    invoice_account_name: props.settings.invoice_account_name || '',
+    invoice_company_number: props.settings.invoice_company_number || '',
+    invoice_footer_note: props.settings.invoice_footer_note || 'Thank you for your custom.',
+    invoice_late_payment: props.settings.invoice_late_payment || '',
     sms_enabled: props.settings.sms_enabled || '0',
     email_notifications: props.settings.email_notifications || '1',
 })
@@ -175,6 +191,56 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Terms</label>
                             <textarea v-model="form.invoice_terms" rows="2" class="w-full rounded-lg border-gray-300 text-sm"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice & VAT Settings -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-1">Invoice &amp; VAT Receipt Settings</h2>
+                    <p class="text-sm text-gray-500 mb-5">These details appear on every invoice and VAT receipt sent to customers.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Companies House Number</label>
+                            <input v-model="form.invoice_company_number" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 12345678" />
+                            <p class="text-xs text-gray-400 mt-1">Required for limited companies</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Due (days)</label>
+                            <input v-model="form.invoice_due_days" type="number" min="0" max="365" class="w-full rounded-lg border-gray-300 text-sm" placeholder="30" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <p class="text-sm font-semibold text-gray-700 mb-3 mt-1 border-t pt-4">Bank / Payment Details</p>
+                            <p class="text-xs text-gray-500 mb-3">Printed on invoices so customers can pay by BACS transfer.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                                    <input v-model="form.invoice_bank_name" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Barclays" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                                    <input v-model="form.invoice_account_name" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Doyen Auto Services Ltd" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sort Code</label>
+                                    <input v-model="form.invoice_sort_code" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 20-00-00" maxlength="8" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                                    <input v-model="form.invoice_account_number" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 12345678" maxlength="8" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Footer Note</label>
+                            <input v-model="form.invoice_footer_note" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Thank you for your custom." />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Late Payment Notice</label>
+                            <textarea v-model="form.invoice_late_payment" rows="2" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Interest may be charged on overdue invoices…"></textarea>
+                            <p class="text-xs text-gray-400 mt-1">Leave blank to hide from invoice. Statutory rate: 8% above Bank of England base rate.</p>
                         </div>
                     </div>
                 </div>
