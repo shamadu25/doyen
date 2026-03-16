@@ -30,6 +30,13 @@ const props = defineProps<{
         invoice_company_number: string
         invoice_footer_note: string
         invoice_late_payment: string
+        invoice_header_name: string
+        invoice_header_address: string
+        invoice_header_city: string
+        invoice_header_postcode: string
+        invoice_header_phone: string
+        invoice_header_email: string
+        invoice_header_website: string
         sms_enabled: string
         email_notifications: string
     }
@@ -62,6 +69,13 @@ const form = useForm({
     invoice_company_number: props.settings.invoice_company_number || '',
     invoice_footer_note: props.settings.invoice_footer_note || 'Thank you for your custom.',
     invoice_late_payment: props.settings.invoice_late_payment || '',
+    invoice_header_name: props.settings.invoice_header_name || '',
+    invoice_header_address: props.settings.invoice_header_address || '',
+    invoice_header_city: props.settings.invoice_header_city || '',
+    invoice_header_postcode: props.settings.invoice_header_postcode || '',
+    invoice_header_phone: props.settings.invoice_header_phone || '',
+    invoice_header_email: props.settings.invoice_header_email || '',
+    invoice_header_website: props.settings.invoice_header_website || '',
     sms_enabled: props.settings.sms_enabled || '0',
     email_notifications: props.settings.email_notifications || '1',
 })
@@ -200,14 +214,58 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                     <h2 class="text-lg font-semibold text-gray-900 mb-1">Invoice &amp; VAT Receipt Settings</h2>
                     <p class="text-sm text-gray-500 mb-5">These details appear on every invoice and VAT receipt sent to customers.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Companies House Number</label>
-                            <input v-model="form.invoice_company_number" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 12345678" />
-                            <p class="text-xs text-gray-400 mt-1">Required for limited companies</p>
+
+                        <!-- Invoice Header Business Details -->
+                        <div class="md:col-span-2">
+                            <div class="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 mb-4">
+                                <p class="text-sm font-semibold text-blue-800 mb-1">Invoice Header Details</p>
+                                <p class="text-xs text-blue-600">These override the general garage settings on the printed invoice / VAT receipt header. Leave blank to use the Garage Details section above.</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Business / Trading Name</label>
+                                    <input v-model="form.invoice_header_name" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Doyen Auto Services Ltd" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Address Line</label>
+                                    <input v-model="form.invoice_header_address" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 12 High Street, Industrial Estate" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City / Town</label>
+                                    <input v-model="form.invoice_header_city" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. Glasgow" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
+                                    <input v-model="form.invoice_header_postcode" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. G1 1AA" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input v-model="form.invoice_header_phone" type="tel" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 0141 000 0000" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input v-model="form.invoice_header_email" type="email" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. accounts@yourgarage.co.uk" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                                    <input v-model="form.invoice_header_website" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. https://www.yourgarage.co.uk" />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Due (days)</label>
-                            <input v-model="form.invoice_due_days" type="number" min="0" max="365" class="w-full rounded-lg border-gray-300 text-sm" placeholder="30" />
+
+                        <div class="md:col-span-2 border-t pt-5">
+                            <p class="text-sm font-semibold text-gray-700 mb-4">VAT &amp; Compliance</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Companies House Number</label>
+                                    <input v-model="form.invoice_company_number" type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 12345678" />
+                                    <p class="text-xs text-gray-400 mt-1">Required for limited companies</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Due (days)</label>
+                                    <input v-model="form.invoice_due_days" type="number" min="0" max="365" class="w-full rounded-lg border-gray-300 text-sm" placeholder="30" />
+                                </div>
+                            </div>
                         </div>
 
                         <div class="md:col-span-2">

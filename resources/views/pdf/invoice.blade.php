@@ -58,7 +58,14 @@
 </head>
 <body>
 @php
-    $garageName    = $garage['garage_name']             ?? 'Doyen Auto Services';
+    // Invoice header — use dedicated invoice_header_* fields; fall back to general garage settings
+    $hdrName     = !empty($garage['invoice_header_name'])     ? $garage['invoice_header_name']     : ($garage['garage_name'] ?? 'Doyen Auto Services');
+    $hdrAddress  = !empty($garage['invoice_header_address'])  ? $garage['invoice_header_address']  : ($garage['address']     ?? '');
+    $hdrCity     = !empty($garage['invoice_header_city'])     ? $garage['invoice_header_city']     : ($garage['city']        ?? '');
+    $hdrPostcode = !empty($garage['invoice_header_postcode']) ? $garage['invoice_header_postcode'] : ($garage['postcode']    ?? '');
+    $hdrPhone    = !empty($garage['invoice_header_phone'])    ? $garage['invoice_header_phone']    : ($garage['phone']       ?? '');
+    $hdrEmail    = !empty($garage['invoice_header_email'])    ? $garage['invoice_header_email']    : ($garage['email']       ?? '');
+    $hdrWebsite  = !empty($garage['invoice_header_website'])  ? $garage['invoice_header_website']  : ($garage['website']     ?? '');
     $vatNumber     = $garage['vat_number']              ?? '';
     $vatRate       = $garage['vat_rate']                ?? '20';
     $isVatDoc      = !empty($vatNumber);
@@ -87,13 +94,13 @@
     <table class="header-table">
         <tr>
             <td style="width:55%">
-                <div class="company-name">{{ $garageName }}</div>
+                <div class="company-name">{{ $hdrName }}</div>
                 <div class="company-meta">
-                    @if(!empty($garage['address']))<span>{{ $garage['address'] }}</span>@endif
-                    @if(!empty($garage['city']) || !empty($garage['postcode']))<span>{{ trim(($garage['city'] ?? '').' '.($garage['postcode'] ?? '')) }}</span>@endif
-                    @if(!empty($garage['phone']))<span>Tel: {{ $garage['phone'] }}</span>@endif
-                    @if(!empty($garage['email']))<span>{{ $garage['email'] }}</span>@endif
-                    @if(!empty($garage['website']))<span>{{ $garage['website'] }}</span>@endif
+                    @if(!empty($hdrAddress))<span>{{ $hdrAddress }}</span>@endif
+                    @if(!empty($hdrCity) || !empty($hdrPostcode))<span>{{ trim($hdrCity.' '.$hdrPostcode) }}</span>@endif
+                    @if(!empty($hdrPhone))<span>Tel: {{ $hdrPhone }}</span>@endif
+                    @if(!empty($hdrEmail))<span>{{ $hdrEmail }}</span>@endif
+                    @if(!empty($hdrWebsite))<span>{{ $hdrWebsite }}</span>@endif
                     @if($isVatDoc)<span style="margin-top:4px;font-weight:600;color:#1e3a8a;">VAT Reg No: {{ $vatNumber }}</span>@endif
                     @if(!empty($companyNumber))<span>Company No: {{ $companyNumber }}</span>@endif
                 </div>
@@ -298,9 +305,9 @@
 
     {{-- FOOTER --}}
     <div class="footer">
-        <strong>{{ $garageName }}</strong><br>
-        @if(!empty($garage['address'])){{ $garage['address'] }}@if(!empty($garage['city'])), {{ $garage['city'] }}@endif @if(!empty($garage['postcode'])){{ $garage['postcode'] }}@endif<br>@endif
-        @if(!empty($garage['phone']))Tel: {{ $garage['phone'] }}@endif@if(!empty($garage['email'])) &bull; {{ $garage['email'] }}@endif@if(!empty($garage['website'])) &bull; {{ $garage['website'] }}@endif
+        <strong>{{ $hdrName }}</strong><br>
+        @if(!empty($hdrAddress)){{ $hdrAddress }}@if(!empty($hdrCity)), {{ $hdrCity }}@endif @if(!empty($hdrPostcode)){{ $hdrPostcode }}@endif<br>@endif
+        @if(!empty($hdrPhone))Tel: {{ $hdrPhone }}@endif@if(!empty($hdrEmail)) &bull; {{ $hdrEmail }}@endif@if(!empty($hdrWebsite)) &bull; {{ $hdrWebsite }}@endif
         @if($isVatDoc)<br>VAT Registration No: {{ $vatNumber }}@endif
         @if(!empty($companyNumber)) &bull; Registered in England &amp; Wales No: {{ $companyNumber }}@endif
         <br><br>{{ $footerNote }}
