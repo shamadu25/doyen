@@ -6,7 +6,7 @@ import CustomerPortalLayout from '@/Layouts/CustomerPortalLayout.vue'
 const props = defineProps<{
     customer: any
     vehicles: any[]
-    services: { id: number; name: string; category: string; duration_minutes: number | null; price: string | null }[]
+    services: { id: number; name: string; category: string; estimated_duration_minutes: number | null; price: string | null }[]
 }>()
 
 // Generate 30-min slots between startHour and endHour (exclusive of endHour)
@@ -143,8 +143,8 @@ function submit() {
                         </div>
 
                         <!-- Duration hint -->
-                        <div v-if="selectedService?.duration_minutes" class="text-xs text-gray-400">
-                            ⏱ Estimated duration: {{ selectedService.duration_minutes }} minutes
+                        <div v-if="selectedService?.estimated_duration_minutes" class="text-xs text-gray-400">
+                            ⏱ Estimated duration: {{ selectedService.estimated_duration_minutes }} minutes
                         </div>
 
                         <div>
