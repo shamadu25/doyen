@@ -140,8 +140,13 @@
                         @if(!empty($invoice->customer->address))
                             {{ $invoice->customer->address }}<br>
                         @endif
-                        @if(!empty($invoice->customer->city) || !empty($invoice->customer->postcode))
-                            {{ $invoice->customer->city ?? '' }}@if(!empty($invoice->customer->city) && !empty($invoice->customer->postcode)) @endif{{ $invoice->customer->postcode ?? '' }}<br>
+                        @php
+                            $custCity = $invoice->customer->city ?? '';
+                            $custPost = $invoice->customer->postcode ?? '';
+                            $custCityLine = trim($custCity . ' ' . $custPost);
+                        @endphp
+                        @if(!empty($custCityLine))
+                            {{ $custCityLine }}<br>
                         @endif
                         @if(!empty($invoice->customer->email))
                             {{ $invoice->customer->email }}<br>
@@ -159,9 +164,9 @@
                     <div class="address-name" style="font-size:14px;letter-spacing:1px;">{{ $invoice->vehicle->registration_number }}</div>
                     <div class="address-detail">
                         {{ $invoice->vehicle->make }} {{ $invoice->vehicle->model }}
-                        @if($invoice->vehicle->year) &bull; {{ $invoice->vehicle->year }}@endif
-                        @if($invoice->vehicle->fuel_type) &bull; {{ ucfirst($invoice->vehicle->fuel_type) }}@endif
-                        @if($invoice->vehicle->mileage)<br>Mileage: {{ number_format($invoice->vehicle->mileage) }} miles@endif
+                        @if(!empty($invoice->vehicle->year)) &bull; {{ $invoice->vehicle->year }}@endif
+                        @if(!empty($invoice->vehicle->fuel_type)) &bull; {{ ucfirst($invoice->vehicle->fuel_type) }}@endif
+                        @if(!empty($invoice->vehicle->mileage))<br>Mileage: {{ number_format($invoice->vehicle->mileage) }} miles@endif
                     </div>
                 </div>
                 @endif
