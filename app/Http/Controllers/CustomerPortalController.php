@@ -132,6 +132,50 @@ class CustomerPortalController extends Controller
     }
 
     /**
+     * Store a new vehicle from customer portal
+     */
+    public function storeVehicle(\Illuminate\Http\Request $request)
+    {
+        if (!session('customer_id')) return redirect()->route('customer.login');
+        $customer = Customer::findOrFail(session('customer_id'));
+
+        $validated = $request->validate([
+            'registration_number' => 'required|string|max:20',
+            'make'                => 'required|string|max:100',
+            'model'               => 'required|string|max:100',
+            'year'                => 'nullable|integer|min:1960|max:' . (date('Y') + 1),
+            'color'               => 'nullable|string|max:50',
+            'fuel_type'           => 'nullable|string|max:50',
+            'mileage'             => 'nullable|integer|min:0',
+        ]);
+
+        $validated['registration_number'] = strtoupper(trim($validated['registration_number']));
+        $validated['customer_id'] = $customer->id;
+        $validated['is_active']   = true;
+
+        Vehicle::create($validated);
+
+        return redirect()->route('customer.vehicles')
+            ->with('success', 'Vehicle added successfully.');
+    }
+
+    /**
+     * Delete a vehicle from customer portal
+     */
+    public function deleteVehicle(Vehicle $vehicle)
+    {
+        if (!session('customer_id')) return redirect()->route('customer.login');
+        $customer = Customer::findOrFail(session('customer_id'));
+
+        if ($vehicle->customer_id !== $customer->id) abort(403);
+
+        $vehicle->delete();
+
+        return redirect()->route('customer.vehicles')
+            ->with('success', 'Vehicle removed.');
+    }
+
+    /**
      * Show customer's invoices
      */
     public function invoices()

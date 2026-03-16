@@ -217,6 +217,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::post('/appointments/{appointment}/request-new-time', [CustomerPortalController::class, 'requestNewTime'])->name('appointments.request-new-time');
     Route::post('/appointments/{appointment}/keep-original', [CustomerPortalController::class, 'keepOriginalTime'])->name('appointments.keep-original');
     Route::get('/vehicles', [CustomerPortalController::class, 'vehicles'])->name('vehicles');
+    Route::post('/vehicles', [CustomerPortalController::class, 'storeVehicle'])->name('vehicles.store');
+    Route::delete('/vehicles/{vehicle}', [CustomerPortalController::class, 'deleteVehicle'])->name('vehicles.delete');
     Route::get('/invoices', [CustomerPortalController::class, 'invoices'])->name('invoices');
     Route::get('/service-history', [CustomerPortalController::class, 'serviceHistory'])->name('service-history');
     Route::get('/quotes', [CustomerPortalController::class, 'quotes'])->name('quotes');

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm, Link } from '@inertiajs/vue3'
+import { Head, useForm, Link, router } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import CustomerPortalLayout from '@/Layouts/CustomerPortalLayout.vue'
 
@@ -9,6 +9,28 @@ const props = defineProps<{
     services: { id: number; name: string; category: string; estimated_duration_minutes: number | null; price: string | null }[]
 }>()
 
+// ── Add-vehicle inline form ───────────────────────────────────────────────────
+const showAddVehicle = ref(false)
+const addVehicleForm = useForm({
+    registration_number: '',
+    make: '',
+    model: '',
+    year: '',
+    color: '',
+    fuel_type: '',
+})
+
+function submitAddVehicle() {
+    addVehicleForm.post('/customer/vehicles', {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddVehicle.value = false
+            addVehicleForm.reset()
+            // Reload the page so the new vehicle appears in props.vehicles
+            router.reload({ only: ['vehicles'] })
+        },
+    })
+}
 // Generate 30-min slots between startHour and endHour (exclusive of endHour)
 function makeSlots(startHour: number, endHour: number) {
     const slots: string[] = []
@@ -102,11 +124,59 @@ function submit() {
 
                 <!-- Vehicle -->
                 <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <h2 class="font-semibold text-gray-800 mb-4">Select Vehicle</h2>
-                    <div v-if="!vehicles.length" class="text-sm text-gray-400 italic">
-                        No vehicles on file. <a href="/customer/vehicles" class="text-electric-600 hover:underline">Add a vehicle</a> or contact us.
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-gray-800">Select Vehicle</h2>
+                        <button type="button" @click="showAddVehicle = !showAddVehicle"
+                            class="text-xs text-electric-600 hover:text-electric-700 font-medium">
+                            + Add vehicle
+                        </button>
                     </div>
-                    <div v-else class="space-y-2">
+
+                    <!-- Inline add-vehicle form -->
+                    <div v-if="showAddVehicle" class="mb-4 rounded-lg border border-electric-200 bg-electric-50 p-4 space-y-3">
+                        <p class="text-sm font-medium text-gray-700">Add a vehicle to your account</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Registration *</label>
+                                <input v-model="addVehicleForm.registration_number" type="text" required placeholder="e.g. AB12 CDE"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.registration_number }" />
+                                <p v-if="addVehicleForm.errors.registration_number" class="mt-1 text-xs text-red-600">{{ addVehicleForm.errors.registration_number }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Make *</label>
+                                <input v-model="addVehicleForm.make" type="text" required placeholder="e.g. Ford"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.make }" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Model *</label>
+                                <input v-model="addVehicleForm.model" type="text" required placeholder="e.g. Focus"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.model }" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Year</label>
+                                <input v-model="addVehicleForm.year" type="number" placeholder="e.g. 2019"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600" />
+                            </div>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" @click="showAddVehicle = false; addVehicleForm.reset()"
+                                class="flex-1 rounded-lg border border-gray-300 py-2 text-xs font-medium text-gray-600 hover:bg-white">
+                                Cancel
+                            </button>
+                            <button type="button" @click="submitAddVehicle" :disabled="addVehicleForm.processing"
+                                class="flex-1 rounded-lg bg-electric-600 py-2 text-xs font-semibold text-white hover:bg-electric-700 disabled:opacity-50">
+                                {{ addVehicleForm.processing ? 'Saving…' : 'Save Vehicle' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="!vehicles.length && !showAddVehicle" class="text-sm text-gray-400 italic">
+                        No vehicles on file. Add a vehicle above or <a href="/customer/vehicles" class="text-electric-600 hover:underline">manage vehicles</a>.
+                    </div>
+                    <div v-else-if="vehicles.length" class="space-y-2">
                         <label v-for="v in vehicles" :key="v.id"
                             :class="['flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors', Number(form.vehicle_id) === v.id ? 'border-electric-600 bg-electric-50' : 'border-gray-200 hover:bg-gray-50']">
                             <input type="radio" v-model="form.vehicle_id" :value="v.id" class="text-electric-600 focus:ring-electric-600" />
@@ -114,10 +184,10 @@ function submit() {
                                 <p class="font-semibold text-gray-900 text-sm">{{ v.registration_number }}</p>
                                 <p class="text-xs text-gray-500">{{ v.make }} {{ v.model }} {{ v.year }}</p>
                             </div>
-                            <div v-if="v.mot_expiry" class="ml-auto text-right">
+                            <div v-if="v.mot_due_date" class="ml-auto text-right">
                                 <p class="text-xs text-gray-400">MOT</p>
-                                <p :class="['text-xs font-medium', new Date(v.mot_expiry) < new Date() ? 'text-red-600' : new Date(v.mot_expiry) < new Date(Date.now() + 30*24*60*60*1000) ? 'text-orange-600' : 'text-green-600']">
-                                    {{ new Date(v.mot_expiry).toLocaleDateString('en-GB') }}
+                                <p :class="['text-xs font-medium', new Date(v.mot_due_date) < new Date() ? 'text-red-600' : new Date(v.mot_due_date) < new Date(Date.now() + 30*24*60*60*1000) ? 'text-orange-600' : 'text-green-600']">
+                                    {{ new Date(v.mot_due_date).toLocaleDateString('en-GB') }}
                                 </p>
                             </div>
                         </label>
