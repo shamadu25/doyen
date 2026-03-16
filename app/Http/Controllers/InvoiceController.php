@@ -102,8 +102,8 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
-            'garageInfo' => [
-                'name' => $garageSettings['garage_name'] ?? 'Doyen Auto Services',
+            'garageSettings' => [
+                'garage_name' => $garageSettings['garage_name'] ?? 'Doyen Auto Services',
                 'address' => $garageSettings['address'] ?? '',
                 'city' => $garageSettings['city'] ?? '',
                 'postcode' => $garageSettings['postcode'] ?? '',
