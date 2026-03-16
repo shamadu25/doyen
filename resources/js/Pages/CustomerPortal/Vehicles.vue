@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import axios from 'axios'
 import CustomerPortalLayout from '@/Layouts/CustomerPortalLayout.vue'
 
 defineProps<{ customer: any, vehicles: any[] }>()
@@ -17,11 +18,60 @@ const form = useForm({
     mileage: '',
 })
 
+// ── DVLA auto-lookup ──────────────────────────────────────────────────────────
+const isLookingUp    = ref(false)
+const lookupMessage  = ref('')
+const lookupSuccess  = ref(false)
+const lookupError    = ref(false)
+let lookupTimeout: number | null = null
+
+watch(() => form.registration_number, (newValue) => {
+    if (lookupTimeout) clearTimeout(lookupTimeout)
+    lookupMessage.value  = ''
+    lookupSuccess.value  = false
+    lookupError.value    = false
+
+    const cleanReg = newValue.replace(/\s/g, '').toUpperCase()
+    if (cleanReg.length >= 4) {
+        lookupTimeout = window.setTimeout(() => lookupVehicle(cleanReg), 800)
+    }
+})
+
+async function lookupVehicle(registration: string) {
+    isLookingUp.value   = true
+    lookupMessage.value = '🔍 Looking up vehicle details...'
+    try {
+        const response = await axios.post('/api/vehicle-lookup', { registration })
+        if (response.data.success) {
+            const d = response.data.data
+            form.make      = d.make      || form.make
+            form.model     = d.model     || form.model
+            form.year      = d.year      ? String(d.year) : form.year
+            form.color     = d.color     || form.color
+            form.fuel_type = d.fuel_type || form.fuel_type
+            lookupSuccess.value = true
+            lookupError.value   = false
+            lookupMessage.value = '✅ Vehicle found! Details auto-filled.'
+        }
+    } catch (error: any) {
+        lookupError.value   = true
+        lookupSuccess.value = false
+        lookupMessage.value = error.response?.status === 404
+            ? '⚠️ Vehicle not found. Please enter details manually.'
+            : '⚠️ Unable to look up vehicle. Please enter details manually.'
+    } finally {
+        isLookingUp.value = false
+    }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function submitAdd() {
     form.post('/customer/vehicles', {
         onSuccess: () => {
             showAddForm.value = false
             form.reset()
+            lookupMessage.value = ''
+            lookupSuccess.value = false
         },
     })
 }
@@ -64,13 +114,32 @@ function confirmDelete(vehicleId: number) {
                 <h2 class="font-semibold text-gray-800 mb-4">Add a New Vehicle</h2>
                 <form @submit.prevent="submitAdd" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <!-- Registration + DVLA lookup -->
+                        <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Registration Number <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="form.registration_number" type="text" required placeholder="e.g. AB12 CDE"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.registration_number }" />
+                            <div class="relative">
+                                <input v-model="form.registration_number" type="text" required placeholder="e.g. AB12 CDE"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-electric-600 pr-9"
+                                    :class="{ 'border-red-400': form.errors.registration_number, 'border-green-400': lookupSuccess }" />
+                                <!-- Spinner -->
+                                <span v-if="isLookingUp" class="absolute right-3 top-2.5">
+                                    <svg class="animate-spin w-4 h-4 text-electric-600" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                    </svg>
+                                </span>
+                                <!-- Success tick -->
+                                <span v-else-if="lookupSuccess" class="absolute right-3 top-2.5 text-green-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </span>
+                            </div>
+                            <p v-if="lookupMessage" class="mt-1 text-xs" :class="lookupSuccess ? 'text-green-600' : lookupError ? 'text-orange-600' : 'text-gray-500'">
+                                {{ lookupMessage }}
+                            </p>
                             <p v-if="form.errors.registration_number" class="mt-1 text-xs text-red-600">{{ form.errors.registration_number }}</p>
                         </div>
                         <div>
