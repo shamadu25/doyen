@@ -17,9 +17,32 @@ use Inertia\Inertia;
 
 class PublicBookingController extends Controller
 {
+    private const DEFAULT_BOOKING_HOURS = [
+        'monday'    => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+        'tuesday'   => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+        'wednesday' => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+        'thursday'  => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+        'friday'    => ['open' => true,  'start' => '08:00', 'end' => '17:00'],
+        'saturday'  => ['open' => true,  'start' => '09:00', 'end' => '13:00'],
+        'sunday'    => ['open' => false, 'start' => '09:00', 'end' => '12:00'],
+    ];
+
     public function create()
     {
-        return Inertia::render('PublicBooking/Create');
+        $settings    = \App\Models\Setting::getAllSettings();
+        $bookingHours = isset($settings['booking_hours'])
+            ? json_decode($settings['booking_hours'], true)
+            : self::DEFAULT_BOOKING_HOURS;
+        $closedDates = isset($settings['booking_closed_dates'])
+            ? array_values(json_decode($settings['booking_closed_dates'], true))
+            : [];
+        $slotDuration = (int)($settings['booking_slot_duration'] ?? 30);
+
+        return Inertia::render('PublicBooking/Create', [
+            'bookingHours' => $bookingHours,
+            'closedDates'  => $closedDates,
+            'slotDuration' => $slotDuration,
+        ]);
     }
 
     public function store(Request $request)

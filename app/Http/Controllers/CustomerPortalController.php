@@ -435,10 +435,30 @@ class CustomerPortalController extends Controller
             ->selectRaw('id, name, category, estimated_duration_minutes, default_price as price');
         $services  = $services->get();
 
+        $settings     = \App\Models\Setting::getAllSettings();
+        $bookingHours = isset($settings['booking_hours'])
+            ? json_decode($settings['booking_hours'], true)
+            : [
+                'monday'    => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'tuesday'   => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'wednesday' => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'thursday'  => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'friday'    => ['open' => true,  'start' => '08:00', 'end' => '17:00'],
+                'saturday'  => ['open' => true,  'start' => '09:00', 'end' => '13:00'],
+                'sunday'    => ['open' => false, 'start' => '09:00', 'end' => '12:00'],
+            ];
+        $closedDates  = isset($settings['booking_closed_dates'])
+            ? array_values(json_decode($settings['booking_closed_dates'], true))
+            : [];
+        $slotDuration = (int)($settings['booking_slot_duration'] ?? 30);
+
         return Inertia::render('CustomerPortal/BookAppointment', [
-            'customer' => $customer,
-            'vehicles' => $vehicles,
-            'services' => $services,
+            'customer'     => $customer,
+            'vehicles'     => $vehicles,
+            'services'     => $services,
+            'bookingHours' => $bookingHours,
+            'closedDates'  => $closedDates,
+            'slotDuration' => $slotDuration,
         ]);
     }
 
@@ -462,6 +482,30 @@ class CustomerPortalController extends Controller
         // Ensure vehicle belongs to this customer
         if (!Vehicle::where('id', $validated['vehicle_id'])->where('customer_id', $customer->id)->exists()) {
             abort(403);
+        }
+
+        // Validate against booking availability settings
+        $settings     = \App\Models\Setting::getAllSettings();
+        $bookingHours = isset($settings['booking_hours'])
+            ? json_decode($settings['booking_hours'], true)
+            : [];
+        $closedDates  = isset($settings['booking_closed_dates'])
+            ? json_decode($settings['booking_closed_dates'], true)
+            : [];
+
+        $dateStr = $validated['appointment_date'];
+        $dayName = strtolower(date('l', strtotime($dateStr)));
+
+        if (in_array($dateStr, $closedDates, true)) {
+            return back()->withErrors(['appointment_date' => 'This date is not available. It has been blocked.'])->withInput();
+        }
+        if (!($bookingHours[$dayName]['open'] ?? true)) {
+            return back()->withErrors(['appointment_date' => 'We are not open on ' . ucfirst($dayName) . 's. Please choose another day.'])->withInput();
+        }
+        $openStart = $bookingHours[$dayName]['start'] ?? '08:00';
+        $openEnd   = $bookingHours[$dayName]['end']   ?? '18:00';
+        if ($validated['appointment_time'] < $openStart || $validated['appointment_time'] >= $openEnd) {
+            return back()->withErrors(['appointment_time' => "Please choose a time between {$openStart} and {$openEnd}."])->withInput();
         }
 
         \App\Models\Appointment::create([

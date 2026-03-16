@@ -5,6 +5,14 @@ import axios from 'axios'
 
 const route = inject<(path: string) => string>('route', (p) => p)
 
+// Booking availability from admin settings
+interface DayConfig { open: boolean; start: string; end: string }
+const props = defineProps<{
+    bookingHours: Record<string, DayConfig>
+    closedDates: string[]
+    slotDuration: number
+}>()
+
 // Garage contact details from shared props
 const garagePhone   = computed(() => ((usePage().props as any).garageSettings?.phone)  || '+44 141 482 0726')
 const garageName    = computed(() => ((usePage().props as any).garageSettings?.garage_name) || 'Doyen Auto Services')
@@ -252,27 +260,56 @@ onMounted(() => {
     }
 })
 
-const timeSlots = [
-    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-]
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
+/** Generate time slot strings from a day config using the admin-configured slot duration */
+function makeSlotsFromConfig(config: DayConfig, slotMins: number): string[] {
+    if (!config?.open) return []
+    const [startH, startM] = config.start.split(':').map(Number)
+    const [endH, endM] = config.end.split(':').map(Number)
+    const startTotal = startH * 60 + startM
+    const endTotal   = endH * 60 + endM
+    const slots: string[] = []
+    for (let t = startTotal; t + slotMins <= endTotal; t += slotMins) {
+        const h = Math.floor(t / 60)
+        const m = t % 60
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+    }
+    return slots
+}
+
+/** Time slots for the currently selected date — respects opening hours from admin settings */
+const timeSlots = computed(() => {
+    if (!form.scheduled_date) return []
+    const d = new Date(form.scheduled_date + 'T00:00:00')
+    const dayName = DAY_NAMES[d.getDay()]
+    const dayConfig = props.bookingHours?.[dayName]
+    if (!dayConfig?.open) return []
+    return makeSlotsFromConfig(dayConfig, props.slotDuration || 30)
+})
+
+/** Next 14 available dates respecting admin booking hours and blocked dates */
 const availableDates = computed(() => {
     const dates: string[] = []
     const today = new Date()
-    
-    for (let i = 1; i <= 14; i++) {
+    for (let i = 1; i <= 90 && dates.length < 14; i++) {
         const date = new Date(today)
         date.setDate(today.getDate() + i)
-        
-        // Skip Sundays
-        if (date.getDay() !== 0) {
-            dates.push(date.toISOString().split('T')[0])
-        }
+        const dateStr  = date.toISOString().split('T')[0]
+        const dayName  = DAY_NAMES[date.getDay()]
+        const dayConfig = props.bookingHours?.[dayName]
+        if (!dayConfig?.open) continue
+        if (props.closedDates?.includes(dateStr)) continue
+        dates.push(dateStr)
     }
-    
     return dates
+})
+
+// Clear selected time when date changes and current time is no longer in the new slot list
+watch(() => form.scheduled_date, () => {
+    if (form.scheduled_time && !timeSlots.value.includes(form.scheduled_time)) {
+        form.scheduled_time = ''
+    }
 })
 
 function formatDate(dateStr: string): string {
@@ -903,7 +940,13 @@ function submit() {
                             <label class="block text-sm font-medium text-gray-700 mb-3">
                                 Preferred Time <span class="text-red-500">*</span>
                             </label>
-                            <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                            <div v-if="!form.scheduled_date" class="text-sm text-gray-400 italic">
+                                Please select a date above first.
+                            </div>
+                            <div v-else-if="timeSlots.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                                No appointment slots available on this day. Please select a different date.
+                            </div>
+                            <div v-else class="grid grid-cols-4 md:grid-cols-6 gap-2">
                                 <button
                                     v-for="time in timeSlots"
                                     :key="time"

@@ -7,6 +7,9 @@ const props = defineProps<{
     customer: any
     vehicles: any[]
     services: { id: number; name: string; category: string; estimated_duration_minutes: number | null; price: string | null }[]
+    bookingHours: Record<string, { open: boolean; start: string; end: string }>
+    closedDates: string[]
+    slotDuration: number
 }>()
 
 // ── Add-vehicle inline form ───────────────────────────────────────────────────
@@ -31,41 +34,81 @@ function submitAddVehicle() {
         },
     })
 }
-// Generate 30-min slots between startHour and endHour (exclusive of endHour)
-function makeSlots(startHour: number, endHour: number) {
+// ── Booking availability from admin settings ─────────────────────────────────
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+
+function getDayName(dateStr: string): string {
+    if (!dateStr) return ''
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return DAY_NAMES[new Date(y, m - 1, d).getDay()]
+}
+
+function makeSlotsFromConfig(config: { open: boolean; start: string; end: string }, slotMins: number): string[] {
+    if (!config?.open) return []
+    const [startH, startM] = config.start.split(':').map(Number)
+    const [endH, endM]     = config.end.split(':').map(Number)
+    const startTotal = startH * 60 + startM
+    const endTotal   = endH * 60 + endM
     const slots: string[] = []
-    for (let h = startHour; h < endHour; h++) {
-        slots.push(`${String(h).padStart(2, '0')}:00`)
-        slots.push(`${String(h).padStart(2, '0')}:30`)
+    for (let t = startTotal; t + slotMins <= endTotal; t += slotMins) {
+        const h = Math.floor(t / 60)
+        const m = t % 60
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
     }
     return slots
 }
-
-const WEEKDAY_SLOTS = makeSlots(9, 18)  // Mon–Fri 09:00–17:30
-const SATURDAY_SLOTS = makeSlots(10, 15) // Sat 10:00–14:30
 
 // Min date = tomorrow
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 const minDate = tomorrow.toISOString().split('T')[0]
 
-// Returns day-of-week for a YYYY-MM-DD string (0=Sun, 6=Sat)
-function dayOfWeek(dateStr: string) {
-    if (!dateStr) return -1
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).getDay()
-}
-
-const isSunday = computed(() => dayOfWeek(form.appointment_date) === 0)
-
-const timeSlots = computed(() => {
-    const dow = dayOfWeek(form.appointment_date)
-    if (dow === 0) return []          // Sunday – closed
-    if (dow === 6) return SATURDAY_SLOTS
-    return WEEKDAY_SLOTS
+/** True when the selected date is a closed day or a blocked date */
+const isDateClosed = computed(() => {
+    if (!form.appointment_date) return false
+    if (props.closedDates?.includes(form.appointment_date)) return true
+    const dayName  = getDayName(form.appointment_date)
+    return !(props.bookingHours?.[dayName]?.open ?? true)
 })
 
-// Clear time if date changes and current time is no longer available
+/** Time slots for the selected date based on admin opening hours */
+const timeSlots = computed(() => {
+    if (!form.appointment_date) return []
+    const dayName  = getDayName(form.appointment_date)
+    const config   = props.bookingHours?.[dayName]
+    return makeSlotsFromConfig(config ?? { open: false, start: '09:00', end: '17:00' }, props.slotDuration || 30)
+})
+
+/** Human-readable opening hours summary built from the booking hours settings */
+const openingHintLines = computed(() => {
+    const bh = props.bookingHours
+    if (!bh) return []
+    const groups: string[] = []
+    const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
+    const shortDay: Record<string, string> = {
+        monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
+        friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
+    }
+    // Group consecutive open days with same hours
+    let start = 0
+    while (start < days.length) {
+        const d = bh[days[start]]
+        if (!d?.open) { start++; continue }
+        let end = start
+        while (end + 1 < days.length && bh[days[end + 1]]?.open
+               && bh[days[end + 1]].start === d.start && bh[days[end + 1]].end === d.end) {
+            end++
+        }
+        const label = start === end ? shortDay[days[start]] : `${shortDay[days[start]]}–${shortDay[days[end]]}`
+        groups.push(`${label} ${d.start}–${d.end}`)
+        start = end + 1
+    }
+    const closedDays = days.filter(d => !bh[d]?.open).map(d => shortDay[d])
+    if (closedDays.length) groups.push(`${closedDays.join(', ')} closed`)
+    return groups
+})
+
+// Clear time if date changes and the current time is no longer in the available slots
 watch(() => form.appointment_date, () => {
     if (form.appointment_time && !timeSlots.value.includes(form.appointment_time)) {
         form.appointment_time = ''
@@ -238,13 +281,19 @@ function submit() {
                             <label class="block text-sm font-medium text-gray-700 mb-1">Preferred date <span class="text-red-500">*</span></label>
                             <input v-model="form.appointment_date" type="date" required :min="minDate"
                                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.appointment_date }" />
+                                :class="{ 'border-red-400': form.errors.appointment_date || isDateClosed }" />
+                            <p v-if="isDateClosed && form.appointment_date" class="mt-1 text-xs text-amber-600">
+                                We are not available on this day. Please choose another date.
+                            </p>
                             <p v-if="form.errors.appointment_date" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_date }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Preferred time <span class="text-red-500">*</span></label>
-                            <div v-if="isSunday" class="w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                                We are closed on Sundays. Please choose another day.
+                            <div v-if="!form.appointment_date" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 italic">
+                                Select a date first
+                            </div>
+                            <div v-else-if="isDateClosed" class="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                                Closed — please choose another day.
                             </div>
                             <select v-else v-model="form.appointment_time" required
                                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
@@ -257,7 +306,9 @@ function submit() {
                     </div>
                     <p class="mt-3 text-xs text-gray-400">
                         We'll confirm your exact appointment time by phone or email within 24 hours.
-                        Mon–Fri 09:00–18:00 &bull; Sat 10:00–15:00 &bull; Sun closed.
+                        <template v-if="openingHintLines.length">
+                            {{ openingHintLines.join(' &bull; ') }}
+                        </template>
                     </p>
                 </div>
 
