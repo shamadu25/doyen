@@ -40,16 +40,16 @@
         <strong>📌 Please Remember:</strong><br>
         • Arrive 10 minutes early<br>
         • Bring your vehicle keys and any relevant documents<br>
-        • Our address: 59 Southcroft Road, Rutherglen, Glasgow, G73 1UG<br>
+        • Our address: {{ \App\Models\Setting::get('address', '59 Southcroft Road') }}, {{ \App\Models\Setting::get('city', 'Rutherglen, Glasgow') }}, {{ \App\Models\Setting::get('postcode', 'G73 1UG') }}<br>
         • Parking available on site
     </div>
 
     <div style="text-align: center;">
-        <a href="https://maps.google.com/?q=59+Southcroft+Road+Rutherglen+Glasgow+G73+1SP" class="button">Get Directions</a>
+        <a href="https://maps.google.com/?q={{ urlencode(\App\Models\Setting::get('address', '59 Southcroft Road') . ' ' . \App\Models\Setting::get('city', 'Rutherglen Glasgow') . ' ' . \App\Models\Setting::get('postcode', 'G73 1SP')) }}" class="button">Get Directions</a>
     </div>
 
     <p style="margin-top: 30px; color: #64748b; font-size: 14px;">
         <strong>Need to reschedule?</strong><br>
-        Please call us as soon as possible at <a href="tel:+441414820726" style="color: #3b82f6;">+44 141 482 0726</a>
+        Please call us as soon as possible at <a href="tel:{{ preg_replace('/[^0-9+]/', '', \App\Models\Setting::get('phone', '+44 141 482 0726')) }}" style="color: #3b82f6;">{{ \App\Models\Setting::get('phone', '+44 141 482 0726') }}</a>
     </p>
 @endsection

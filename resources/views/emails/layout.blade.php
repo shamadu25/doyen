@@ -156,9 +156,9 @@
         <div class="footer">
             <div class="footer-contact">
                 <strong>Contact Us:</strong><br>
-                📞 <a href="tel:+447760926245">07760 926 245</a><br>
-                📧 <a href="mailto:info@doyenautos.co.uk">info@doyenautos.co.uk</a><br>
-                📍 Unit 5, Auto Park, London, UK
+                📞 <a href="tel:{{ preg_replace('/[^0-9+]/', '', \App\Models\Setting::get('phone', '+44 141 482 0726')) }}">{{ \App\Models\Setting::get('phone', '+44 141 482 0726') }}</a><br>
+                📧 <a href="mailto:{{ \App\Models\Setting::get('email', 'info@doyenautos.co.uk') }}">{{ \App\Models\Setting::get('email', 'info@doyenautos.co.uk') }}</a><br>
+                📍 {{ \App\Models\Setting::get('address', '59 Southcroft Road') }}, {{ \App\Models\Setting::get('city', 'Rutherglen, Glasgow') }}
             </div>
             <div class="divider"></div>
             <p style="margin: 10px 0 0;">

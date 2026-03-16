@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
+
+const garagePhone   = computed(() => ((usePage().props as any).garageSettings?.phone)   || '+44 141 482 0726')
+const garageAddress = computed(() => ((usePage().props as any).garageSettings?.address) || '59 Southcroft Road')
+const garageCity    = computed(() => ((usePage().props as any).garageSettings?.city)    || 'Rutherglen, Glasgow')
 
 const props = defineProps<{
     status: 'accepted' | 'declined'
@@ -43,8 +48,8 @@ const props = defineProps<{
 
             <div class="border-t pt-6">
                 <p class="text-sm text-gray-500 mb-3">Questions? Contact us:</p>
-                <p class="font-semibold text-gray-700">+44 141 482 0726</p>
-                <p class="text-sm text-gray-500">Doyen Auto Services, Rutherglen, Glasgow</p>
+                <p class="font-semibold text-gray-700">{{ garagePhone }}</p>
+                <p class="text-sm text-gray-500">Doyen Auto Services, {{ garageCity }}</p>
             </div>
         </div>
     </div>

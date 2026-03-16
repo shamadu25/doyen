@@ -61,8 +61,8 @@
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
     <p style="font-size:13px;color:#555;">If you have any questions, please contact us:</p>
     <p style="font-size:13px;color:#555;">
-      📞 <strong>+44 141 482 0726</strong><br>
-      📍 Rutherglen, Glasgow
+      📞 <strong>{{ \App\Models\Setting::get('phone', '+44 141 482 0726') }}</strong><br>
+      📍 {{ \App\Models\Setting::get('city', 'Rutherglen, Glasgow') }}
     </p>
   </div>
   <div class="footer">

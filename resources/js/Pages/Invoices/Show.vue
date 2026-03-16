@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, inject, ref, nextTick } from 'vue'
+
+const garageSettings = computed(() => (usePage().props as any).garageSettings ?? {})
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
 import { loadStripe } from '@stripe/stripe-js'
@@ -130,9 +132,9 @@ function closeStripeModal() {
                 <!-- Header -->
                 <div class="flex justify-between mb-8">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">Doyen Auto Services</h2>
-                        <p class="text-sm text-gray-500">59 Southcroft Road, Rutherglen</p>
-                        <p class="text-sm text-gray-500">Glasgow, G73 1UG</p>
+                        <h2 class="text-xl font-bold text-gray-900">{{ garageSettings.garage_name || 'Doyen Auto Services' }}</h2>
+                        <p class="text-sm text-gray-500">{{ garageSettings.address || '59 Southcroft Road' }}, {{ garageSettings.city || 'Rutherglen, Glasgow' }}</p>
+                        <p class="text-sm text-gray-500">{{ garageSettings.postcode || 'G73 1UG' }}</p>
                     </div>
                     <div class="text-right">
                         <p class="text-2xl font-bold text-gray-900">INVOICE</p>
