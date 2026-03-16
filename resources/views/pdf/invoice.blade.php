@@ -96,13 +96,27 @@
             <td style="width:55%">
                 <div class="company-name">{{ $hdrName }}</div>
                 <div class="company-meta">
-                    @if(!empty($hdrAddress))<span>{{ $hdrAddress }}</span>@endif
-                    @if(!empty($hdrCity) || !empty($hdrPostcode))<span>{{ trim($hdrCity.' '.$hdrPostcode) }}</span>@endif
-                    @if(!empty($hdrPhone))<span>Tel: {{ $hdrPhone }}</span>@endif
-                    @if(!empty($hdrEmail))<span>{{ $hdrEmail }}</span>@endif
-                    @if(!empty($hdrWebsite))<span>{{ $hdrWebsite }}</span>@endif
-                    @if($isVatDoc)<span style="margin-top:4px;font-weight:600;color:#1e3a8a;">VAT Reg No: {{ $vatNumber }}</span>@endif
-                    @if(!empty($companyNumber))<span>Company No: {{ $companyNumber }}</span>@endif
+                    @if(!empty($hdrAddress))
+                        <span>{{ $hdrAddress }}</span>
+                    @endif
+                    @if(!empty($hdrCity) || !empty($hdrPostcode))
+                        <span>{{ trim($hdrCity.' '.$hdrPostcode) }}</span>
+                    @endif
+                    @if(!empty($hdrPhone))
+                        <span>Tel: {{ $hdrPhone }}</span>
+                    @endif
+                    @if(!empty($hdrEmail))
+                        <span>{{ $hdrEmail }}</span>
+                    @endif
+                    @if(!empty($hdrWebsite))
+                        <span>{{ $hdrWebsite }}</span>
+                    @endif
+                    @if($isVatDoc)
+                        <span style="margin-top:4px;font-weight:600;color:#1e3a8a;">VAT Reg No: {{ $vatNumber }}</span>
+                    @endif
+                    @if(!empty($companyNumber))
+                        <span>Company No: {{ $companyNumber }}</span>
+                    @endif
                 </div>
             </td>
             <td style="width:45%;text-align:right;">
@@ -164,9 +178,15 @@
                     <div class="address-name" style="font-size:14px;letter-spacing:1px;">{{ $invoice->vehicle->registration_number }}</div>
                     <div class="address-detail">
                         {{ $invoice->vehicle->make }} {{ $invoice->vehicle->model }}
-                        @if(!empty($invoice->vehicle->year)) &bull; {{ $invoice->vehicle->year }}@endif
-                        @if(!empty($invoice->vehicle->fuel_type)) &bull; {{ ucfirst($invoice->vehicle->fuel_type) }}@endif
-                        @if(!empty($invoice->vehicle->mileage))<br>Mileage: {{ number_format($invoice->vehicle->mileage) }} miles@endif
+                        @if(!empty($invoice->vehicle->year))
+                            &bull; {{ $invoice->vehicle->year }}
+                        @endif
+                        @if(!empty($invoice->vehicle->fuel_type))
+                            &bull; {{ ucfirst($invoice->vehicle->fuel_type) }}
+                        @endif
+                        @if(!empty($invoice->vehicle->mileage))
+                            <br>Mileage: {{ number_format($invoice->vehicle->mileage) }} miles
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -182,9 +202,13 @@
                 <th>Type</th>
                 <th class="r" style="width:7%">Qty</th>
                 <th class="r" style="width:12%">Unit Price</th>
-                @if($isVatDoc)<th class="r" style="width:8%">VAT %</th>@endif
+                @if($isVatDoc)
+                    <th class="r" style="width:8%">VAT %</th>
+                @endif
                 <th class="r" style="width:12%">Net</th>
-                @if($isVatDoc)<th class="r" style="width:10%">VAT</th>@endif
+                @if($isVatDoc)
+                    <th class="r" style="width:10%">VAT</th>
+                @endif
                 <th class="r" style="width:12%">Total</th>
             </tr>
         </thead>
@@ -202,14 +226,20 @@
             <tr>
                 <td>
                     {{ $item->description }}
-                    @if(!empty($item->notes))<br><span style="font-size:9.5px;color:#888;">{{ $item->notes }}</span>@endif
+                    @if(!empty($item->notes))
+                        <br><span style="font-size:9.5px;color:#888;">{{ $item->notes }}</span>
+                    @endif
                 </td>
                 <td style="text-transform:capitalize;color:#555;">{{ $item->item_type ?? 'service' }}</td>
                 <td class="r">{{ $qty == intval($qty) ? intval($qty) : number_format($qty,2) }}</td>
                 <td class="r">&pound;{{ number_format($unit, 2) }}</td>
-                @if($isVatDoc)<td class="r">{{ number_format($vr, 0) }}%</td>@endif
+                @if($isVatDoc)
+                    <td class="r">{{ number_format($vr, 0) }}%</td>
+                @endif
                 <td class="r">&pound;{{ number_format($net, 2) }}</td>
-                @if($isVatDoc)<td class="r">&pound;{{ number_format($iVat, 2) }}</td>@endif
+                @if($isVatDoc)
+                    <td class="r">&pound;{{ number_format($iVat, 2) }}</td>
+                @endif
                 <td class="r">&pound;{{ number_format($iTotal, 2) }}</td>
             </tr>
         @empty
@@ -291,10 +321,18 @@
             @if(!empty($bankName) || !empty($accountNum))
             <td style="width:46%;padding-right:20px;vertical-align:top;">
                 <div class="section-label">Bank Transfer / BACS Details</div>
-                @if(!empty($bankName))<p><strong>Bank:</strong> {{ $bankName }}</p>@endif
-                @if(!empty($accountName))<p><strong>Account Name:</strong> {{ $accountName }}</p>@endif
-                @if(!empty($sortCode))<p><strong>Sort Code:</strong> {{ $sortCode }}</p>@endif
-                @if(!empty($accountNum))<p><strong>Account Number:</strong> {{ $accountNum }}</p>@endif
+                @if(!empty($bankName))
+                    <p><strong>Bank:</strong> {{ $bankName }}</p>
+                @endif
+                @if(!empty($accountName))
+                    <p><strong>Account Name:</strong> {{ $accountName }}</p>
+                @endif
+                @if(!empty($sortCode))
+                    <p><strong>Sort Code:</strong> {{ $sortCode }}</p>
+                @endif
+                @if(!empty($accountNum))
+                    <p><strong>Account Number:</strong> {{ $accountNum }}</p>
+                @endif
                 <p style="margin-top:4px;"><strong>Payment Reference:</strong> {{ $invoice->invoice_number }}</p>
             </td>
             @endif
@@ -319,12 +357,22 @@
     {{-- FOOTER --}}
     <div class="footer">
         <strong>{{ $hdrName }}</strong><br>
+        @php
+            $footerCityLine = trim($hdrCity . ' ' . $hdrPostcode);
+            $footerAddrFull = $hdrAddress . (!empty($footerCityLine) ? ', ' . $footerCityLine : '');
+        @endphp
         @if(!empty($hdrAddress))
-            {{ $hdrAddress }}@if(!empty($hdrCity) || !empty($hdrPostcode)), {{ trim($hdrCity.' '.$hdrPostcode) }}@endif<br>
+            {{ $footerAddrFull }}<br>
         @endif
-        @if(!empty($hdrPhone))Tel: {{ $hdrPhone }}@endif
-        @if(!empty($hdrEmail)) &bull; {{ $hdrEmail }}@endif
-        @if(!empty($hdrWebsite)) &bull; {{ $hdrWebsite }}@endif
+        @if(!empty($hdrPhone))
+            Tel: {{ $hdrPhone }}
+        @endif
+        @if(!empty($hdrEmail))
+            &bull; {{ $hdrEmail }}
+        @endif
+        @if(!empty($hdrWebsite))
+            &bull; {{ $hdrWebsite }}
+        @endif
         @if($isVatDoc)
             <br>VAT Registration No: {{ $vatNumber }}
         @endif
