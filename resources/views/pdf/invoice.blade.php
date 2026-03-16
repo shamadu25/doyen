@@ -137,10 +137,18 @@
                     <div class="address-label">Invoice To</div>
                     <div class="address-name">{{ ($invoice->customer->first_name ?? '').' '.($invoice->customer->last_name ?? '') }}</div>
                     <div class="address-detail">
-                        @if(!empty($invoice->customer->address)){{ $invoice->customer->address }}<br>@endif
-                        @if(!empty($invoice->customer->city)){{ $invoice->customer->city }}@if(!empty($invoice->customer->postcode)) {{ $invoice->customer->postcode }}@endif<br>@endif
-                        @if(!empty($invoice->customer->email)){{ $invoice->customer->email }}<br>@endif
-                        @if(!empty($invoice->customer->phone)){{ $invoice->customer->phone }}@endif
+                        @if(!empty($invoice->customer->address))
+                            {{ $invoice->customer->address }}<br>
+                        @endif
+                        @if(!empty($invoice->customer->city) || !empty($invoice->customer->postcode))
+                            {{ $invoice->customer->city ?? '' }}@if(!empty($invoice->customer->city) && !empty($invoice->customer->postcode)) @endif{{ $invoice->customer->postcode ?? '' }}<br>
+                        @endif
+                        @if(!empty($invoice->customer->email))
+                            {{ $invoice->customer->email }}<br>
+                        @endif
+                        @if(!empty($invoice->customer->phone))
+                            {{ $invoice->customer->phone }}
+                        @endif
                     </div>
                 </div>
             </td>
@@ -306,10 +314,18 @@
     {{-- FOOTER --}}
     <div class="footer">
         <strong>{{ $hdrName }}</strong><br>
-        @if(!empty($hdrAddress)){{ $hdrAddress }}@if(!empty($hdrCity)), {{ $hdrCity }}@endif @if(!empty($hdrPostcode)){{ $hdrPostcode }}@endif<br>@endif
-        @if(!empty($hdrPhone))Tel: {{ $hdrPhone }}@endif@if(!empty($hdrEmail)) &bull; {{ $hdrEmail }}@endif@if(!empty($hdrWebsite)) &bull; {{ $hdrWebsite }}@endif
-        @if($isVatDoc)<br>VAT Registration No: {{ $vatNumber }}@endif
-        @if(!empty($companyNumber)) &bull; Registered in England &amp; Wales No: {{ $companyNumber }}@endif
+        @if(!empty($hdrAddress))
+            {{ $hdrAddress }}@if(!empty($hdrCity) || !empty($hdrPostcode)), {{ trim($hdrCity.' '.$hdrPostcode) }}@endif<br>
+        @endif
+        @if(!empty($hdrPhone))Tel: {{ $hdrPhone }}@endif
+        @if(!empty($hdrEmail)) &bull; {{ $hdrEmail }}@endif
+        @if(!empty($hdrWebsite)) &bull; {{ $hdrWebsite }}@endif
+        @if($isVatDoc)
+            <br>VAT Registration No: {{ $vatNumber }}
+        @endif
+        @if(!empty($companyNumber))
+            &bull; Registered in England &amp; Wales No: {{ $companyNumber }}
+        @endif
         <br><br>{{ $footerNote }}
     </div>
 
