@@ -132,4 +132,21 @@ class JobCard extends Model
 
         return $servicesTotal + $partsTotal;
     }
+
+    public function calculateTotals(): void
+    {
+        $this->load(['services', 'parts']);
+
+        $servicesTotal = $this->services->sum(function ($service) {
+            $price = $service->price ?? $service->unit_price ?? 0;
+            return $price * ($service->quantity ?? 1);
+        });
+
+        $partsTotal = $this->parts->sum(function ($part) {
+            $price = $part->selling_price ?? $part->unit_price ?? 0;
+            return $price * ($part->quantity ?? 1);
+        });
+
+        $this->update(['estimated_cost' => $servicesTotal + $partsTotal]);
+    }
 }

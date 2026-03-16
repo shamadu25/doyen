@@ -38,7 +38,9 @@ class QuoteController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('quote_number', 'like', "%{$search}%")
                   ->orWhereHas('customer', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
                   });
             });
         }
