@@ -140,18 +140,26 @@ class CustomerPortalController extends Controller
         $customer = Customer::findOrFail(session('customer_id'));
 
         $validated = $request->validate([
-            'registration_number' => 'required|string|max:20',
-            'make'                => 'required|string|max:100',
-            'model'               => 'required|string|max:100',
-            'year'                => 'nullable|integer|min:1960|max:' . (date('Y') + 1),
-            'color'               => 'nullable|string|max:50',
-            'fuel_type'           => 'nullable|string|max:50',
-            'mileage'             => 'nullable|integer|min:0',
+            'registration_number' => [
+                'required', 'string', 'max:20',
+                \Illuminate\Validation\Rule::unique('vehicles', 'registration_number')
+                    ->whereNull('deleted_at'),
+            ],
+            'make'      => 'required|string|max:100',
+            'model'     => 'required|string|max:100',
+            'year'      => 'nullable|integer|min:1960|max:' . (date('Y') + 1),
+            'color'     => 'nullable|string|max:50',
+            'fuel_type' => 'nullable|string|max:50',
+            'mileage'   => 'nullable|integer|min:0',
+        ], [
+            'registration_number.unique' => 'This vehicle is already registered in our system.',
         ]);
 
         $validated['registration_number'] = strtoupper(trim($validated['registration_number']));
         $validated['customer_id'] = $customer->id;
         $validated['is_active']   = true;
+        // year is NOT NULL in DB — default to current year if omitted
+        $validated['year'] = $validated['year'] ?? (int) date('Y');
 
         Vehicle::create($validated);
 
