@@ -158,8 +158,9 @@ class CustomerPortalController extends Controller
         $validated['registration_number'] = strtoupper(trim($validated['registration_number']));
         $validated['customer_id'] = $customer->id;
         $validated['is_active']   = true;
-        // year is NOT NULL in DB — default to current year if omitted
-        $validated['year'] = $validated['year'] ?? (int) date('Y');
+        // year and mileage are NOT NULL in DB — supply safe defaults when omitted
+        $validated['year']    = $validated['year']    ?? (int) date('Y');
+        $validated['mileage'] = $validated['mileage'] ?? 0;
 
         Vehicle::create($validated);
 
