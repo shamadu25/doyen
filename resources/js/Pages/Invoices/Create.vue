@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 const props = defineProps<{
     customers: any[]
     vehicles: any[]
+    defaultVatRate: number
 }>()
 const route = inject<(path: string) => string>('route', (p) => p)
 const form = useForm({
@@ -14,7 +15,7 @@ const form = useForm({
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: '',
     notes: '',
-    items: [{ description: '', quantity: 1, unit_price: '', type: 'labour' }] as any[],
+    items: [{ description: '', quantity: 1, unit_price: '', type: 'labour', vat_enabled: true }] as any[],
 })
 
 const filteredVehicles = computed(() => {
@@ -23,21 +24,30 @@ const filteredVehicles = computed(() => {
 })
 
 function addItem() {
-    form.items.push({ description: '', quantity: 1, unit_price: '', type: 'labour' })
+    form.items.push({ description: '', quantity: 1, unit_price: '', type: 'labour', vat_enabled: true })
 }
 
 function removeItem(idx: number) {
     if (form.items.length > 1) form.items.splice(idx, 1)
 }
 
-const subtotal = computed(() => form.items.reduce((s, i) => s + (parseFloat(i.quantity || 0) * parseFloat(i.unit_price || 0)), 0))
-const vat = computed(() => subtotal.value * 0.2)
-const total = computed(() => subtotal.value + vat.value)
+const subtotal = computed(() => form.items.reduce((s: number, i: any) => s + (parseFloat(i.quantity || 0) * parseFloat(i.unit_price || 0)), 0))
+const vatTotal = computed(() => form.items.reduce((s: number, i: any) => {
+    const net = parseFloat(i.quantity || 0) * parseFloat(i.unit_price || 0)
+    return s + (i.vat_enabled ? net * (props.defaultVatRate / 100) : 0)
+}, 0))
+const total = computed(() => subtotal.value + vatTotal.value)
 
 function fmt(n: number) { return '£' + n.toFixed(2) }
 
 function submit() {
-    form.post(route('/invoices'))
+    form.transform((data: any) => ({
+        ...data,
+        items: data.items.map((i: any) => ({
+            ...i,
+            vat_rate: i.vat_enabled ? props.defaultVatRate : 0,
+        }))
+    })).post(route('/invoices'))
 }
 </script>
 
@@ -88,9 +98,18 @@ function submit() {
                         <button type="button" @click="addItem" class="text-sm text-electric-600 hover:text-electric-700 font-medium">+ Add Item</button>
                     </div>
 
+                    <!-- Column headers -->
+                    <div class="grid grid-cols-12 gap-3 text-xs font-medium text-gray-500 mb-1 px-0.5">
+                        <div class="col-span-4">Description</div>
+                        <div class="col-span-2">Type</div>
+                        <div class="col-span-1">Qty</div>
+                        <div class="col-span-2">Unit Price</div>
+                        <div class="col-span-2 text-center">VAT</div>
+                        <div class="col-span-1"></div>
+                    </div>
                     <div class="space-y-3">
-                        <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-3 items-start">
-                            <div class="col-span-5">
+                        <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-3 items-center">
+                            <div class="col-span-4">
                                 <input v-model="item.description" type="text" placeholder="Description" class="w-full rounded-lg border-gray-300 text-sm" required />
                             </div>
                             <div class="col-span-2">
@@ -100,13 +119,17 @@ function submit() {
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div class="col-span-2">
+                            <div class="col-span-1">
                                 <input v-model="item.quantity" type="number" min="1" step="0.01" placeholder="Qty" class="w-full rounded-lg border-gray-300 text-sm" required />
                             </div>
                             <div class="col-span-2">
-                                <input v-model="item.unit_price" type="number" step="0.01" placeholder="Price" class="w-full rounded-lg border-gray-300 text-sm" required />
+                                <input v-model="item.unit_price" type="number" step="0.01" placeholder="£0.00" class="w-full rounded-lg border-gray-300 text-sm" required />
                             </div>
-                            <div class="col-span-1 flex items-center justify-center pt-1">
+                            <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                <input type="checkbox" v-model="item.vat_enabled" :id="`vat-${idx}`" class="rounded border-gray-300 text-electric-600 focus:ring-electric-500" />
+                                <label :for="`vat-${idx}`" class="text-xs cursor-pointer select-none" :class="item.vat_enabled ? 'text-gray-700 font-medium' : 'text-gray-400'">{{ item.vat_enabled ? defaultVatRate + '%' : 'Exempt' }}</label>
+                            </div>
+                            <div class="col-span-1 flex items-center justify-center">
                                 <button v-if="form.items.length > 1" type="button" @click="removeItem(idx)" class="text-red-400 hover:text-red-600">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
@@ -117,7 +140,7 @@ function submit() {
                     <!-- Totals -->
                     <div class="mt-6 border-t pt-4 space-y-2 max-w-xs ml-auto text-sm">
                         <div class="flex justify-between"><span class="text-gray-600">Subtotal:</span><span class="font-medium">{{ fmt(subtotal) }}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-600">VAT (20%):</span><span class="font-medium">{{ fmt(vat) }}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">VAT:</span><span class="font-medium">{{ fmt(vatTotal) }}</span></div>
                         <div class="flex justify-between border-t pt-2"><span class="font-semibold">Total:</span><span class="font-bold text-electric-600 text-lg">{{ fmt(total) }}</span></div>
                     </div>
                 </div>
