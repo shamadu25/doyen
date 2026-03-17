@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, router, usePage } from '@inertiajs/vue3'
-import { inject, ref, reactive, computed } from 'vue'
+import { inject, ref, reactive, computed, watch } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 type DayConfig = { open: boolean; start: string; end: string }
@@ -93,10 +93,17 @@ const hours = reactive<BookingHours>(
     )
 )
 
-const availabilityForm = useForm<BookingHours>(hours as any)
+const availabilitySaving = ref(false)
+const availabilitySuccess = ref(false)
 
 function saveAvailability() {
-    availabilityForm.post('/settings/booking-availability', { preserveScroll: true })
+    availabilitySaving.value = true
+    availabilitySuccess.value = false
+    router.post('/settings/booking-availability', hours, {
+        preserveScroll: true,
+        onSuccess: () => { availabilitySuccess.value = true },
+        onFinish: () => { availabilitySaving.value = false },
+    })
 }
 
 // ----- Closed Dates -----
@@ -375,10 +382,11 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                     </div>
                 </div>
 
-                <div class="flex justify-end mt-4">
-                    <button @click="saveAvailability" :disabled="availabilityForm.processing"
+                <div class="flex items-center justify-end gap-3 mt-4">
+                    <span v-if="availabilitySuccess" class="text-sm text-green-600 font-medium">Opening hours saved!</span>
+                    <button @click="saveAvailability" :disabled="availabilitySaving"
                             class="px-6 py-2 text-sm font-medium text-white bg-electric-600 rounded-lg hover:bg-electric-700 disabled:opacity-50">
-                        {{ availabilityForm.processing ? 'Saving…' : 'Save Opening Hours' }}
+                        {{ availabilitySaving ? 'Saving…' : 'Save Opening Hours' }}
                     </button>
                 </div>
             </div>
