@@ -58,63 +58,6 @@ function makeSlotsFromConfig(config: { open: boolean; start: string; end: string
     return slots
 }
 
-// Min date = tomorrow
-const tomorrow = new Date()
-tomorrow.setDate(tomorrow.getDate() + 1)
-const minDate = tomorrow.toISOString().split('T')[0]
-
-/** True when the selected date is a closed day or a blocked date */
-const isDateClosed = computed(() => {
-    if (!form.appointment_date) return false
-    if (props.closedDates?.includes(form.appointment_date)) return true
-    const dayName  = getDayName(form.appointment_date)
-    return !(props.bookingHours?.[dayName]?.open ?? true)
-})
-
-/** Time slots for the selected date based on admin opening hours */
-const timeSlots = computed(() => {
-    if (!form.appointment_date) return []
-    const dayName  = getDayName(form.appointment_date)
-    const config   = props.bookingHours?.[dayName]
-    return makeSlotsFromConfig(config ?? { open: false, start: '09:00', end: '17:00' }, props.slotDuration || 30)
-})
-
-/** Human-readable opening hours summary built from the booking hours settings */
-const openingHintLines = computed(() => {
-    const bh = props.bookingHours
-    if (!bh) return []
-    const groups: string[] = []
-    const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
-    const shortDay: Record<string, string> = {
-        monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
-        friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
-    }
-    // Group consecutive open days with same hours
-    let start = 0
-    while (start < days.length) {
-        const d = bh[days[start]]
-        if (!d?.open) { start++; continue }
-        let end = start
-        while (end + 1 < days.length && bh[days[end + 1]]?.open
-               && bh[days[end + 1]].start === d.start && bh[days[end + 1]].end === d.end) {
-            end++
-        }
-        const label = start === end ? shortDay[days[start]] : `${shortDay[days[start]]}–${shortDay[days[end]]}`
-        groups.push(`${label} ${d.start}–${d.end}`)
-        start = end + 1
-    }
-    const closedDays = days.filter(d => !bh[d]?.open).map(d => shortDay[d])
-    if (closedDays.length) groups.push(`${closedDays.join(', ')} closed`)
-    return groups
-})
-
-// Clear time if date changes and the current time is no longer in the available slots
-watch(() => form.appointment_date, () => {
-    if (form.appointment_time && !timeSlots.value.includes(form.appointment_time)) {
-        form.appointment_time = ''
-    }
-})
-
 const form = useForm({
     vehicle_id:       props.vehicles.length === 1 ? props.vehicles[0].id : '',
     service_id:       '',
@@ -125,6 +68,44 @@ const form = useForm({
 })
 
 const selectedService = computed(() => props.services.find(s => s.id === Number(form.service_id)))
+
+/** Next 14 available dates respecting admin booking hours and blocked dates */
+const availableDates = computed(() => {
+    const dates: string[] = []
+    const today = new Date()
+    for (let i = 1; i <= 90 && dates.length < 14; i++) {
+        const date = new Date(today)
+        date.setDate(today.getDate() + i)
+        const dateStr = date.toISOString().split('T')[0]
+        const dayName = DAY_NAMES[date.getDay()]
+        const dayConfig = props.bookingHours?.[dayName]
+        if (!dayConfig?.open) continue
+        if (props.closedDates?.includes(dateStr)) continue
+        dates.push(dateStr)
+    }
+    return dates
+})
+
+/** Time slots for the selected date based on admin opening hours */
+const timeSlots = computed(() => {
+    if (!form.appointment_date) return []
+    const dayName = getDayName(form.appointment_date)
+    const config  = props.bookingHours?.[dayName]
+    if (!config?.open) return []
+    return makeSlotsFromConfig(config, props.slotDuration || 30)
+})
+
+// Clear time if date changes and the current time is no longer valid
+watch(() => form.appointment_date, () => {
+    if (form.appointment_time && !timeSlots.value.includes(form.appointment_time)) {
+        form.appointment_time = ''
+    }
+})
+
+function formatDate(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+}
 
 // Auto-fill service_type from selected service
 watch(() => form.service_id, val => {
@@ -275,41 +256,58 @@ function submit() {
 
                 <!-- Date & Time -->
                 <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <h2 class="font-semibold text-gray-800 mb-4">Choose a Date & Time</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred date <span class="text-red-500">*</span></label>
-                            <input v-model="form.appointment_date" type="date" required :min="minDate"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.appointment_date || isDateClosed }" />
-                            <p v-if="isDateClosed && form.appointment_date" class="mt-1 text-xs text-amber-600">
-                                We are not available on this day. Please choose another date.
-                            </p>
-                            <p v-if="form.errors.appointment_date" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_date }}</p>
+                    <h2 class="font-semibold text-gray-800 mb-4">Choose a Date &amp; Time</h2>
+
+                    <!-- Date buttons — only shows admin-enabled days -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Preferred Date <span class="text-red-500">*</span>
+                        </label>
+                        <div v-if="availableDates.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            No available dates found in the next 90 days. Please contact us directly to book.
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred time <span class="text-red-500">*</span></label>
-                            <div v-if="!form.appointment_date" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 italic">
-                                Select a date first
-                            </div>
-                            <div v-else-if="isDateClosed" class="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                                Closed — please choose another day.
-                            </div>
-                            <select v-else v-model="form.appointment_time" required
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.appointment_time }">
-                                <option value="">Select time…</option>
-                                <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
-                            </select>
-                            <p v-if="form.errors.appointment_time" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_time }}</p>
+                        <div v-else class="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                            <button
+                                v-for="date in availableDates"
+                                :key="date"
+                                type="button"
+                                @click="form.appointment_date = date"
+                                class="p-2 rounded-lg border-2 text-center transition hover:border-electric-600"
+                                :class="form.appointment_date === date ? 'border-electric-600 bg-electric-50' : 'border-gray-200'"
+                            >
+                                <div class="text-xs font-medium text-gray-900">{{ formatDate(date) }}</div>
+                            </button>
                         </div>
+                        <p v-if="form.errors.appointment_date" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_date }}</p>
                     </div>
-                    <p class="mt-3 text-xs text-gray-400">
-                        We'll confirm your exact appointment time by phone or email within 24 hours.
-                        <template v-if="openingHintLines.length">
-                            {{ openingHintLines.join(' &bull; ') }}
-                        </template>
-                    </p>
+
+                    <!-- Time buttons — generated from admin slot duration and opening hours -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Preferred Time <span class="text-red-500">*</span>
+                        </label>
+                        <div v-if="!form.appointment_date" class="text-sm text-gray-400 italic">
+                            Select a date above first.
+                        </div>
+                        <div v-else-if="timeSlots.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            No slots available on this day. Please choose another date.
+                        </div>
+                        <div v-else class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                            <button
+                                v-for="t in timeSlots"
+                                :key="t"
+                                type="button"
+                                @click="form.appointment_time = t"
+                                class="p-2 rounded-lg border-2 text-sm text-center transition hover:border-electric-600"
+                                :class="form.appointment_time === t ? 'border-electric-600 bg-electric-50 font-semibold' : 'border-gray-200'"
+                            >
+                                {{ t }}
+                            </button>
+                        </div>
+                        <p v-if="form.errors.appointment_time" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_time }}</p>
+                    </div>
+
+                    <p class="mt-4 text-xs text-gray-400">We'll confirm your appointment by phone or email within 24 hours.</p>
                 </div>
 
                 <!-- Notes -->
