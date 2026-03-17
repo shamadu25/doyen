@@ -140,14 +140,26 @@ class SettingsController extends Controller
 
         $rules = [];
         foreach ($days as $day) {
-            $rules["{$day}.open"]  = 'required|boolean';
+            $rules["{$day}.open"]  = 'required';
             $rules["{$day}.start"] = 'required|string|max:5';
             $rules["{$day}.end"]   = 'required|string|max:5';
         }
 
         $validated = $request->validate($rules);
 
-        Setting::set('booking_hours', json_encode($validated), 'booking');
+        // Normalise 'open' to a proper PHP boolean regardless of how it was sent
+        // (boolean true/false, int 1/0, string "true"/"false"/"1"/"0")
+        $hoursData = [];
+        foreach ($days as $day) {
+            $open = $validated[$day]['open'];
+            $hoursData[$day] = [
+                'open'  => filter_var($open, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$open,
+                'start' => $validated[$day]['start'],
+                'end'   => $validated[$day]['end'],
+            ];
+        }
+
+        Setting::set('booking_hours', json_encode($hoursData), 'booking');
 
         return back()->with('success', 'Booking hours updated successfully.');
     }

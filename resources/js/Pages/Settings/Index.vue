@@ -95,13 +95,25 @@ const hours = reactive<BookingHours>(
 
 const availabilitySaving = ref(false)
 const availabilitySuccess = ref(false)
+const availabilityError = ref('')
 
 function saveAvailability() {
     availabilitySaving.value = true
     availabilitySuccess.value = false
-    router.post('/settings/booking-availability', hours, {
+    availabilityError.value = ''
+    // Deep-clone via JSON to convert Vue Proxy → plain object and booleans → 0/1
+    const payload: Record<string, any> = {}
+    for (const day of days) {
+        payload[day] = {
+            open:  hours[day].open ? 1 : 0,
+            start: hours[day].start,
+            end:   hours[day].end,
+        }
+    }
+    router.post('/settings/booking-availability', payload, {
         preserveScroll: true,
         onSuccess: () => { availabilitySuccess.value = true },
+        onError: (errors) => { availabilityError.value = Object.values(errors).join(', ') || 'Save failed.' },
         onFinish: () => { availabilitySaving.value = false },
     })
 }
@@ -383,6 +395,7 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                 </div>
 
                 <div class="flex items-center justify-end gap-3 mt-4">
+                    <span v-if="availabilityError" class="text-sm text-red-600 font-medium">{{ availabilityError }}</span>
                     <span v-if="availabilitySuccess" class="text-sm text-green-600 font-medium">Opening hours saved!</span>
                     <button @click="saveAvailability" :disabled="availabilitySaving"
                             class="px-6 py-2 text-sm font-medium text-white bg-electric-600 rounded-lg hover:bg-electric-700 disabled:opacity-50">
