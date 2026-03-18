@@ -623,39 +623,41 @@ function submit() {
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Registration Number <span class="text-red-500">*</span>
                             </label>
-                            <div class="relative">
-                                <input
-                                    v-model="form.vehicle_registration"
-                                    type="text"
-                                    class="w-full rounded-lg border-gray-300 shadow-sm uppercase transition-colors"
-                                    :class="[
-                                        form.errors.vehicle_registration ? 'border-red-500' : '',
-                                        isLookingUp ? 'pr-10' : form.vehicle_registration ? 'pr-8' : '',
-                                        lookupSuccess ? 'bg-electric-50 cursor-not-allowed text-gray-600 focus:border-electric-200 focus:ring-electric-200' : 'focus:border-electric-600 focus:ring-electric-600'
-                                    ]"
-                                    :readonly="lookupSuccess"
-                                    placeholder="e.g. AB12 CDE"
-                                    required
-                                />
-                                <!-- Clear button -->
+                            <div class="flex gap-2 items-start">
+                                <div class="relative flex-1">
+                                    <input
+                                        v-model="form.vehicle_registration"
+                                        type="text"
+                                        class="w-full rounded-lg border-gray-300 shadow-sm uppercase transition-colors"
+                                        :class="[
+                                            form.errors.vehicle_registration ? 'border-red-500' : '',
+                                            isLookingUp ? 'pr-10' : '',
+                                            lookupSuccess ? 'bg-electric-50 cursor-not-allowed text-gray-600 focus:border-electric-200 focus:ring-electric-200' : 'focus:border-electric-600 focus:ring-electric-600'
+                                        ]"
+                                        :readonly="lookupSuccess"
+                                        placeholder="e.g. AB12 CDE"
+                                        required
+                                    />
+                                    <!-- Loading spinner -->
+                                    <div v-if="isLookingUp" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <svg class="animate-spin h-5 w-5 text-electric-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <!-- Clear / Reset button -->
                                 <button
-                                    v-if="form.vehicle_registration && !isLookingUp"
+                                    v-if="form.vehicle_registration"
                                     type="button"
                                     @click="clearRegistration"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
-                                    title="Clear registration number"
+                                    class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-300 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 hover:border-red-400 transition-colors"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
+                                    Clear
                                 </button>
-                                <!-- Loading spinner -->
-                                <div v-if="isLookingUp" class="absolute right-3 top-1/2 -translate-y-1/2">
-                                    <svg class="animate-spin h-5 w-5 text-electric-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </div>
                             </div>
                             <!-- Lookup status message -->
                             <p v-if="lookupMessage" class="mt-2 text-sm" :class="{
