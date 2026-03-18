@@ -89,6 +89,26 @@ function removeFile(index: number) {
     form.attachments = [...selectedFiles.value]
 }
 
+function clearRegistration() {
+    form.vehicle_registration = ''
+    form.vehicle_make = ''
+    form.vehicle_model = ''
+    form.vehicle_year = null
+    form.vehicle_colour = ''
+    form.vehicle_fuel_type = ''
+    form.vehicle_engine_size = null
+    form.vehicle_transmission = ''
+    form.vehicle_mot_due_date = ''
+    form.vehicle_tax_due_date = ''
+    lookupSuccess.value = false
+    lookupError.value = false
+    lookupMessage.value = ''
+    dvlaCard.value = null
+    if (lookupTimeout) {
+        clearTimeout(lookupTimeout)
+    }
+}
+
 // Watch vehicle registration for auto-lookup
 watch(() => form.vehicle_registration, (newValue) => {
     // Clear previous timeout
@@ -526,13 +546,25 @@ function submit() {
                                     class="w-full rounded-lg border-gray-300 shadow-sm uppercase transition-colors"
                                     :class="[
                                         form.errors.vehicle_registration ? 'border-red-500' : '',
-                                        isLookingUp ? 'pr-10' : '',
+                                        isLookingUp ? 'pr-10' : form.vehicle_registration ? 'pr-8' : '',
                                         lookupSuccess ? 'bg-electric-50 cursor-not-allowed text-gray-600 focus:border-electric-200 focus:ring-electric-200' : 'focus:border-electric-600 focus:ring-electric-600'
                                     ]"
                                     :readonly="lookupSuccess"
                                     placeholder="e.g. AB12 CDE"
                                     required
                                 />
+                                <!-- Clear button -->
+                                <button
+                                    v-if="form.vehicle_registration && !isLookingUp"
+                                    type="button"
+                                    @click="clearRegistration"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Clear registration number"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                                 <!-- Loading spinner -->
                                 <div v-if="isLookingUp" class="absolute right-3 top-1/2 -translate-y-1/2">
                                     <svg class="animate-spin h-5 w-5 text-electric-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

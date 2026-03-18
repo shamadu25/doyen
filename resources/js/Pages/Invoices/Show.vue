@@ -165,6 +165,7 @@ function closeStripeModal() {
                             <th class="text-center py-3 font-medium text-gray-500">Type</th>
                             <th class="text-right py-3 font-medium text-gray-500">Qty</th>
                             <th class="text-right py-3 font-medium text-gray-500">Unit Price</th>
+                            <th class="text-right py-3 font-medium text-gray-500">VAT</th>
                             <th class="text-right py-3 font-medium text-gray-500">Total</th>
                         </tr>
                     </thead>
@@ -174,6 +175,7 @@ function closeStripeModal() {
                             <td class="py-3 text-center text-gray-500 capitalize">{{ item.type || '-' }}</td>
                             <td class="py-3 text-right text-gray-600">{{ item.quantity }}</td>
                             <td class="py-3 text-right text-gray-600">{{ fmt(item.unit_price) }}</td>
+                            <td class="py-3 text-right text-gray-500">{{ fmt(parseFloat(item.vat_amount ?? 0)) }}</td>
                             <td class="py-3 text-right font-medium text-gray-900">{{ fmt(parseFloat(item.quantity) * parseFloat(item.unit_price)) }}</td>
                         </tr>
                     </tbody>
