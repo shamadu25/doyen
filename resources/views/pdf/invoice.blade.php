@@ -68,8 +68,6 @@
     $hdrWebsite  = !empty($garage['invoice_header_website'])  ? $garage['invoice_header_website']  : ($garage['website']     ?? '');
     $vatNumber     = $garage['vat_number']              ?? '';
     $vatRate       = $garage['vat_rate']                ?? '20';
-    $isVatDoc      = !empty($vatNumber) || $vatAmount > 0;
-    $docTitle      = $isVatDoc ? 'VAT RECEIPT' : 'INVOICE';
     $companyNumber = $garage['invoice_company_number']  ?? '';
     $bankName      = $garage['invoice_bank_name']       ?? '';
     $sortCode      = $garage['invoice_sort_code']       ?? '';
@@ -81,6 +79,8 @@
     $dueDays       = $garage['invoice_due_days']        ?? '30';
     $subtotal      = (float)($invoice->subtotal         ?? 0);
     $vatAmount     = (float)($invoice->vat_amount       ?? $invoice->tax_amount ?? 0);
+    $isVatDoc      = !empty($vatNumber) || $vatAmount > 0;
+    $docTitle      = $isVatDoc ? 'VAT RECEIPT' : 'INVOICE';
     $totalAmount   = (float)($invoice->total_amount     ?? $invoice->total ?? ($subtotal + $vatAmount));
     $discount      = (float)($invoice->discount_amount  ?? 0);
     $paidAmount    = (float)($invoice->paid_amount      ?? 0);
