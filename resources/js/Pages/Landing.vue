@@ -41,9 +41,10 @@ const garageTelHref      = computed(() => 'tel:+44' + garagePhone.value.replace(
 const garageMailHref     = computed(() => 'mailto:' + garageEmail.value)
 const googleReviewLink   = computed(() => garage.value.google_review_link || 'https://maps.app.goo.gl/dKnuaDHKtwtaHw3u5')
 
-// WhatsApp support chat link — strip non-digits and build wa.me URL
+// WhatsApp support chat link — uses dedicated whatsapp_number if set, otherwise falls back to garagePhone
 const whatsappSupportHref = computed(() => {
-    const raw = garagePhone.value.replace(/\s/g, '').replace(/^\+/, '').replace(/^0/, '44')
+    const num = garage.value.whatsapp_number || garagePhone.value
+    const raw = num.replace(/\s/g, '').replace(/^\+/, '').replace(/^0/, '44')
     return `https://wa.me/${raw}?text=Hello%2C%20I%20would%20like%20to%20enquire%20about%20your%20services.`
 })
 

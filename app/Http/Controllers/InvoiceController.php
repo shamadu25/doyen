@@ -102,8 +102,8 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
-            'garageInfo' => [
-                'name' => $garageSettings['garage_name'] ?? 'Doyen Auto Services',
+            'garageSettings' => [
+                'garage_name' => $garageSettings['garage_name'] ?? 'Doyen Auto Services',
                 'address' => $garageSettings['address'] ?? '',
                 'city' => $garageSettings['city'] ?? '',
                 'postcode' => $garageSettings['postcode'] ?? '',
@@ -118,15 +118,72 @@ class InvoiceController extends Controller
     {
         $invoice->load('items');
         return Inertia::render('Invoices/Edit', [
-            'invoice' => $invoice,
-            'customers' => \App\Models\Customer::select('id', 'first_name', 'last_name')->get(),
-            'vehicles' => \App\Models\Vehicle::select('id', 'customer_id', 'registration_number', 'make', 'model')->get(),
+            'invoice'        => $invoice,
+            'customers'      => \App\Models\Customer::select('id', 'first_name', 'last_name')->get(),
+            'vehicles'       => \App\Models\Vehicle::select('id', 'customer_id', 'registration_number', 'make', 'model')->get(),
+            'defaultVatRate' => (float) Setting::get('vat_rate', 20),
         ]);
     }
 
     public function update(Request $request, Invoice $invoice)
     {
-        $invoice->update($request->only('notes', 'terms', 'due_date', 'status'));
+        $request->validate([
+            'notes'               => 'nullable|string|max:2000',
+            'terms'               => 'nullable|string|max:2000',
+            'due_date'            => 'nullable|date',
+            'status'              => 'nullable|string|in:draft,sent,paid,overdue,cancelled,refunded',
+            'items'               => 'required|array|min:1',
+            'items.*.description' => 'required|string|max:500',
+            'items.*.quantity'    => 'required|numeric|min:0.01',
+            'items.*.unit_price'  => 'required|numeric|min:0',
+            'items.*.type'        => 'nullable|string|in:labour,part,service,other',
+            'items.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
+            'items.*.discount'    => 'nullable|numeric|min:0',
+        ]);
+
+        $vatRate = (float) Setting::get('vat_rate', 20);
+        $items = $request->input('items', []);
+        $subtotal = $vatTotal = $discountTotal = 0;
+
+        foreach ($items as $item) {
+            $discount  = $item['discount'] ?? 0;
+            $lineTotal = ($item['quantity'] * $item['unit_price']) - $discount;
+            $itemVatRate = $item['vat_rate'] ?? $vatRate;
+            $subtotal      += $lineTotal;
+            $vatTotal      += $lineTotal * ($itemVatRate / 100);
+            $discountTotal += $discount;
+        }
+
+        $invoice->update([
+            'notes'           => $request->notes,
+            'terms'           => $request->terms,
+            'due_date'        => $request->due_date,
+            'status'          => $request->status ?? $invoice->status,
+            'subtotal'        => round($subtotal, 2),
+            'vat_amount'      => round($vatTotal, 2),
+            'total_amount'    => round($subtotal + $vatTotal, 2),
+            'discount_amount' => round($discountTotal, 2),
+        ]);
+
+        $invoice->items()->delete();
+        foreach ($items as $item) {
+            $discount    = $item['discount'] ?? 0;
+            $lineTotal   = ($item['quantity'] * $item['unit_price']) - $discount;
+            $itemVatRate = $item['vat_rate'] ?? $vatRate;
+            InvoiceItem::create([
+                'invoice_id'  => $invoice->id,
+                'item_type'   => $item['type'] ?? 'other',
+                'description' => $item['description'],
+                'quantity'    => $item['quantity'],
+                'unit_price'  => $item['unit_price'],
+                'vat_rate'    => $itemVatRate,
+                'discount'    => $discount,
+                'line_total'  => round($lineTotal, 2),
+                'vat_amount'  => round($lineTotal * ($itemVatRate / 100), 2),
+            ]);
+        }
+
+        ActivityLog::log('updated', "Invoice {$invoice->invoice_number} updated", $invoice);
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
     }
 

@@ -1,54 +1,62 @@
 <script setup lang="ts">
-import { Head, useForm, Link } from '@inertiajs/vue3'
+import { Head, useForm, Link, router } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import CustomerPortalLayout from '@/Layouts/CustomerPortalLayout.vue'
 
 const props = defineProps<{
     customer: any
     vehicles: any[]
-    services: { id: number; name: string; category: string; duration_minutes: number | null; price: string | null }[]
+    services: { id: number; name: string; category: string; estimated_duration_minutes: number | null; price: string | null }[]
+    bookingHours: Record<string, { open: boolean; start: string; end: string }>
+    closedDates: string[]
+    slotDuration: number
 }>()
 
-// Generate 30-min slots between startHour and endHour (exclusive of endHour)
-function makeSlots(startHour: number, endHour: number) {
+// ── Add-vehicle inline form ───────────────────────────────────────────────────
+const showAddVehicle = ref(false)
+const addVehicleForm = useForm({
+    registration_number: '',
+    make: '',
+    model: '',
+    year: '',
+    color: '',
+    fuel_type: '',
+})
+
+function submitAddVehicle() {
+    addVehicleForm.post('/customer/vehicles', {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddVehicle.value = false
+            addVehicleForm.reset()
+            // Reload the page so the new vehicle appears in props.vehicles
+            router.reload({ only: ['vehicles'] })
+        },
+    })
+}
+// ── Booking availability from admin settings ─────────────────────────────────
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+
+function getDayName(dateStr: string): string {
+    if (!dateStr) return ''
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return DAY_NAMES[new Date(y, m - 1, d).getDay()]
+}
+
+function makeSlotsFromConfig(config: { open: boolean; start: string; end: string }, slotMins: number): string[] {
+    if (!config?.open) return []
+    const [startH, startM] = config.start.split(':').map(Number)
+    const [endH, endM]     = config.end.split(':').map(Number)
+    const startTotal = startH * 60 + startM
+    const endTotal   = endH * 60 + endM
     const slots: string[] = []
-    for (let h = startHour; h < endHour; h++) {
-        slots.push(`${String(h).padStart(2, '0')}:00`)
-        slots.push(`${String(h).padStart(2, '0')}:30`)
+    for (let t = startTotal; t + slotMins <= endTotal; t += slotMins) {
+        const h = Math.floor(t / 60)
+        const m = t % 60
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
     }
     return slots
 }
-
-const WEEKDAY_SLOTS = makeSlots(9, 18)  // Mon–Fri 09:00–17:30
-const SATURDAY_SLOTS = makeSlots(10, 15) // Sat 10:00–14:30
-
-// Min date = tomorrow
-const tomorrow = new Date()
-tomorrow.setDate(tomorrow.getDate() + 1)
-const minDate = tomorrow.toISOString().split('T')[0]
-
-// Returns day-of-week for a YYYY-MM-DD string (0=Sun, 6=Sat)
-function dayOfWeek(dateStr: string) {
-    if (!dateStr) return -1
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).getDay()
-}
-
-const isSunday = computed(() => dayOfWeek(form.appointment_date) === 0)
-
-const timeSlots = computed(() => {
-    const dow = dayOfWeek(form.appointment_date)
-    if (dow === 0) return []          // Sunday – closed
-    if (dow === 6) return SATURDAY_SLOTS
-    return WEEKDAY_SLOTS
-})
-
-// Clear time if date changes and current time is no longer available
-watch(() => form.appointment_date, () => {
-    if (form.appointment_time && !timeSlots.value.includes(form.appointment_time)) {
-        form.appointment_time = ''
-    }
-})
 
 const form = useForm({
     vehicle_id:       props.vehicles.length === 1 ? props.vehicles[0].id : '',
@@ -60,6 +68,44 @@ const form = useForm({
 })
 
 const selectedService = computed(() => props.services.find(s => s.id === Number(form.service_id)))
+
+/** Next 14 available dates respecting admin booking hours and blocked dates */
+const availableDates = computed(() => {
+    const dates: string[] = []
+    const today = new Date()
+    for (let i = 1; i <= 90 && dates.length < 14; i++) {
+        const date = new Date(today)
+        date.setDate(today.getDate() + i)
+        const dateStr = date.toISOString().split('T')[0]
+        const dayName = DAY_NAMES[date.getDay()]
+        const dayConfig = props.bookingHours?.[dayName]
+        if (!dayConfig?.open) continue
+        if (props.closedDates?.includes(dateStr)) continue
+        dates.push(dateStr)
+    }
+    return dates
+})
+
+/** Time slots for the selected date based on admin opening hours */
+const timeSlots = computed(() => {
+    if (!form.appointment_date) return []
+    const dayName = getDayName(form.appointment_date)
+    const config  = props.bookingHours?.[dayName]
+    if (!config?.open) return []
+    return makeSlotsFromConfig(config, props.slotDuration || 30)
+})
+
+// Clear time if date changes and the current time is no longer valid
+watch(() => form.appointment_date, () => {
+    if (form.appointment_time && !timeSlots.value.includes(form.appointment_time)) {
+        form.appointment_time = ''
+    }
+})
+
+function formatDate(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+}
 
 // Auto-fill service_type from selected service
 watch(() => form.service_id, val => {
@@ -102,11 +148,59 @@ function submit() {
 
                 <!-- Vehicle -->
                 <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <h2 class="font-semibold text-gray-800 mb-4">Select Vehicle</h2>
-                    <div v-if="!vehicles.length" class="text-sm text-gray-400 italic">
-                        No vehicles on file. <a href="/customer/vehicles" class="text-electric-600 hover:underline">Add a vehicle</a> or contact us.
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-gray-800">Select Vehicle</h2>
+                        <button type="button" @click="showAddVehicle = !showAddVehicle"
+                            class="text-xs text-electric-600 hover:text-electric-700 font-medium">
+                            + Add vehicle
+                        </button>
                     </div>
-                    <div v-else class="space-y-2">
+
+                    <!-- Inline add-vehicle form -->
+                    <div v-if="showAddVehicle" class="mb-4 rounded-lg border border-electric-200 bg-electric-50 p-4 space-y-3">
+                        <p class="text-sm font-medium text-gray-700">Add a vehicle to your account</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Registration *</label>
+                                <input v-model="addVehicleForm.registration_number" type="text" required placeholder="e.g. AB12 CDE"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.registration_number }" />
+                                <p v-if="addVehicleForm.errors.registration_number" class="mt-1 text-xs text-red-600">{{ addVehicleForm.errors.registration_number }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Make *</label>
+                                <input v-model="addVehicleForm.make" type="text" required placeholder="e.g. Ford"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.make }" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Model *</label>
+                                <input v-model="addVehicleForm.model" type="text" required placeholder="e.g. Focus"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
+                                    :class="{ 'border-red-400': addVehicleForm.errors.model }" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Year</label>
+                                <input v-model="addVehicleForm.year" type="number" placeholder="e.g. 2019"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600" />
+                            </div>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" @click="showAddVehicle = false; addVehicleForm.reset()"
+                                class="flex-1 rounded-lg border border-gray-300 py-2 text-xs font-medium text-gray-600 hover:bg-white">
+                                Cancel
+                            </button>
+                            <button type="button" @click="submitAddVehicle" :disabled="addVehicleForm.processing"
+                                class="flex-1 rounded-lg bg-electric-600 py-2 text-xs font-semibold text-white hover:bg-electric-700 disabled:opacity-50">
+                                {{ addVehicleForm.processing ? 'Saving…' : 'Save Vehicle' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="!vehicles.length && !showAddVehicle" class="text-sm text-gray-400 italic">
+                        No vehicles on file. Add a vehicle above or <a href="/customer/vehicles" class="text-electric-600 hover:underline">manage vehicles</a>.
+                    </div>
+                    <div v-else-if="vehicles.length" class="space-y-2">
                         <label v-for="v in vehicles" :key="v.id"
                             :class="['flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors', Number(form.vehicle_id) === v.id ? 'border-electric-600 bg-electric-50' : 'border-gray-200 hover:bg-gray-50']">
                             <input type="radio" v-model="form.vehicle_id" :value="v.id" class="text-electric-600 focus:ring-electric-600" />
@@ -114,10 +208,10 @@ function submit() {
                                 <p class="font-semibold text-gray-900 text-sm">{{ v.registration_number }}</p>
                                 <p class="text-xs text-gray-500">{{ v.make }} {{ v.model }} {{ v.year }}</p>
                             </div>
-                            <div v-if="v.mot_expiry" class="ml-auto text-right">
+                            <div v-if="v.mot_due_date" class="ml-auto text-right">
                                 <p class="text-xs text-gray-400">MOT</p>
-                                <p :class="['text-xs font-medium', new Date(v.mot_expiry) < new Date() ? 'text-red-600' : new Date(v.mot_expiry) < new Date(Date.now() + 30*24*60*60*1000) ? 'text-orange-600' : 'text-green-600']">
-                                    {{ new Date(v.mot_expiry).toLocaleDateString('en-GB') }}
+                                <p :class="['text-xs font-medium', new Date(v.mot_due_date) < new Date() ? 'text-red-600' : new Date(v.mot_due_date) < new Date(Date.now() + 30*24*60*60*1000) ? 'text-orange-600' : 'text-green-600']">
+                                    {{ new Date(v.mot_due_date).toLocaleDateString('en-GB') }}
                                 </p>
                             </div>
                         </label>
@@ -143,8 +237,8 @@ function submit() {
                         </div>
 
                         <!-- Duration hint -->
-                        <div v-if="selectedService?.duration_minutes" class="text-xs text-gray-400">
-                            ⏱ Estimated duration: {{ selectedService.duration_minutes }} minutes
+                        <div v-if="selectedService?.estimated_duration_minutes" class="text-xs text-gray-400">
+                            ⏱ Estimated duration: {{ selectedService.estimated_duration_minutes }} minutes
                         </div>
 
                         <div>
@@ -162,33 +256,58 @@ function submit() {
 
                 <!-- Date & Time -->
                 <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <h2 class="font-semibold text-gray-800 mb-4">Choose a Date & Time</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred date <span class="text-red-500">*</span></label>
-                            <input v-model="form.appointment_date" type="date" required :min="minDate"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.appointment_date }" />
-                            <p v-if="form.errors.appointment_date" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_date }}</p>
+                    <h2 class="font-semibold text-gray-800 mb-4">Choose a Date &amp; Time</h2>
+
+                    <!-- Date buttons — only shows admin-enabled days -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Preferred Date <span class="text-red-500">*</span>
+                        </label>
+                        <div v-if="availableDates.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            No available dates found in the next 90 days. Please contact us directly to book.
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred time <span class="text-red-500">*</span></label>
-                            <div v-if="isSunday" class="w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                                We are closed on Sundays. Please choose another day.
-                            </div>
-                            <select v-else v-model="form.appointment_time" required
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-electric-600"
-                                :class="{ 'border-red-400': form.errors.appointment_time }">
-                                <option value="">Select time…</option>
-                                <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
-                            </select>
-                            <p v-if="form.errors.appointment_time" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_time }}</p>
+                        <div v-else class="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                            <button
+                                v-for="date in availableDates"
+                                :key="date"
+                                type="button"
+                                @click="form.appointment_date = date"
+                                class="p-2 rounded-lg border-2 text-center transition hover:border-electric-600"
+                                :class="form.appointment_date === date ? 'border-electric-600 bg-electric-50' : 'border-gray-200'"
+                            >
+                                <div class="text-xs font-medium text-gray-900">{{ formatDate(date) }}</div>
+                            </button>
                         </div>
+                        <p v-if="form.errors.appointment_date" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_date }}</p>
                     </div>
-                    <p class="mt-3 text-xs text-gray-400">
-                        We'll confirm your exact appointment time by phone or email within 24 hours.
-                        Mon–Fri 09:00–18:00 &bull; Sat 10:00–15:00 &bull; Sun closed.
-                    </p>
+
+                    <!-- Time buttons — generated from admin slot duration and opening hours -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Preferred Time <span class="text-red-500">*</span>
+                        </label>
+                        <div v-if="!form.appointment_date" class="text-sm text-gray-400 italic">
+                            Select a date above first.
+                        </div>
+                        <div v-else-if="timeSlots.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            No slots available on this day. Please choose another date.
+                        </div>
+                        <div v-else class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                            <button
+                                v-for="t in timeSlots"
+                                :key="t"
+                                type="button"
+                                @click="form.appointment_time = t"
+                                class="p-2 rounded-lg border-2 text-sm text-center transition hover:border-electric-600"
+                                :class="form.appointment_time === t ? 'border-electric-600 bg-electric-50 font-semibold' : 'border-gray-200'"
+                            >
+                                {{ t }}
+                            </button>
+                        </div>
+                        <p v-if="form.errors.appointment_time" class="mt-1 text-xs text-red-600">{{ form.errors.appointment_time }}</p>
+                    </div>
+
+                    <p class="mt-4 text-xs text-gray-400">We'll confirm your appointment by phone or email within 24 hours.</p>
                 </div>
 
                 <!-- Notes -->

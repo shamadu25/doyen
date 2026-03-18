@@ -139,38 +139,74 @@ class AppointmentController extends Controller
 
     protected function getAvailableSlots()
     {
+        // Load configurable booking hours from settings
+        $rawHours = \App\Models\Setting::get('booking_hours');
+        $bookingHours = $rawHours
+            ? json_decode($rawHours, true)
+            : [
+                'monday'    => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'tuesday'   => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'wednesday' => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'thursday'  => ['open' => true,  'start' => '08:00', 'end' => '17:30'],
+                'friday'    => ['open' => true,  'start' => '08:00', 'end' => '17:00'],
+                'saturday'  => ['open' => true,  'start' => '09:00', 'end' => '13:00'],
+                'sunday'    => ['open' => false, 'start' => '09:00', 'end' => '12:00'],
+            ];
+
+        // Load closed/blocked dates
+        $rawClosed = \App\Models\Setting::get('booking_closed_dates', '[]');
+        $closedDates = json_decode($rawClosed, true) ?? [];
+
         $slots = [];
-        $workingHours = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
-        
+
         for ($i = 1; $i <= 30; $i++) {
-            $date = now()->addDays($i);
-            
-            // Skip Sundays
-            if ($date->dayOfWeek === 0) {
+            $date    = now()->addDays($i);
+            $dateStr = $date->format('Y-m-d');
+            $dayName = strtolower($date->format('l')); // e.g. 'monday'
+
+            // Skip if closed date
+            if (in_array($dateStr, $closedDates, true)) {
                 continue;
             }
-            
-            $dateStr = $date->format('Y-m-d');
-            
-            // Get booked appointments for this date
+
+            // Skip if day is marked closed
+            $dayConfig = $bookingHours[$dayName] ?? ['open' => false];
+            if (empty($dayConfig['open'])) {
+                continue;
+            }
+
+            // Generate 30-minute slots between start and end times
+            $start = \Carbon\Carbon::createFromFormat('H:i', $dayConfig['start'] ?? '09:00');
+            $end   = \Carbon\Carbon::createFromFormat('H:i', $dayConfig['end']   ?? '17:00');
+
+            $workingHours = [];
+            $cursor = $start->copy();
+            while ($cursor->lt($end)) {
+                $workingHours[] = $cursor->format('H:i');
+                $cursor->addMinutes(30);
+            }
+
+            if (empty($workingHours)) {
+                continue;
+            }
+
+            // Remove already-booked slots
             $bookedSlots = Appointment::whereDate('appointment_date', $dateStr)
                 ->where('status', '!=', 'cancelled')
                 ->pluck('appointment_date')
-                ->map(function($datetime) {
-                    return \Carbon\Carbon::parse($datetime)->format('H:i');
-                })
+                ->map(fn($dt) => \Carbon\Carbon::parse($dt)->format('H:i'))
                 ->toArray();
-            
-            $availableForDate = array_diff($workingHours, $bookedSlots);
-            
+
+            $availableForDate = array_values(array_diff($workingHours, $bookedSlots));
+
             if (!empty($availableForDate)) {
                 $slots[$dateStr] = [
-                    'date' => $date->format('l, F j, Y'),
-                    'times' => array_values($availableForDate)
+                    'date'  => $date->format('l, F j, Y'),
+                    'times' => $availableForDate,
                 ];
             }
         }
-        
+
         return $slots;
     }
 }

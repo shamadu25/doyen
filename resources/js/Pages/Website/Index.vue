@@ -43,6 +43,7 @@ const props = defineProps<{
         seo: Record<string, string>
         social: Record<string, string>
         about: Record<string, string>
+        contact: Record<string, string>
     }
 }>()
 
@@ -56,6 +57,7 @@ const tabs = [
     { id: 'seo',          label: '🔍 SEO' },
     { id: 'social',       label: '📱 Social Links' },
     { id: 'about',        label: '👤 About Page' },
+    { id: 'contact',      label: '📍 Contact Details' },
 ]
 
 // --- Hero Form ---
@@ -158,20 +160,34 @@ function saveSocial() {
     })
 }
 
+// --- Contact Form ---
+const contactForm = useForm({
+    address:         props.content.contact?.address         || '',
+    city:            props.content.contact?.city            || '',
+    postcode:        props.content.contact?.postcode        || '',
+    phone:           props.content.contact?.phone           || '',
+    email:           props.content.contact?.email           || '',
+    whatsapp_number: props.content.contact?.whatsapp_number || '',
+})
+
+function saveContact() {
+    contactForm.post(route('/website/contact'), { preserveScroll: true })
+}
+
 // --- About Form ---
 const aboutForm = useForm({
-    hero_badge:             props.content.about?.hero_badge            || '',
-    hero_headline:          props.content.about?.hero_headline         || '',
-    hero_headline_gradient: props.content.about?.hero_headline_gradient || '',
+    hero_badge:             props.content.about?.hero_badge            || 'About Doyen Auto Services',
+    hero_headline:          props.content.about?.hero_headline         || 'Glasgow-based Precision',
+    hero_headline_gradient: props.content.about?.hero_headline_gradient || 'Vehicle Diagnostics',
     hero_subline:           props.content.about?.hero_subline          || '',
-    stat_1_value:           props.content.about?.stat_1_value          || '',
-    stat_1_label:           props.content.about?.stat_1_label          || '',
-    stat_2_value:           props.content.about?.stat_2_value          || '',
-    stat_2_label:           props.content.about?.stat_2_label          || '',
-    stat_3_value:           props.content.about?.stat_3_value          || '',
-    stat_3_label:           props.content.about?.stat_3_label          || '',
-    stat_4_value:           props.content.about?.stat_4_value          || '',
-    stat_4_label:           props.content.about?.stat_4_label          || '',
+    stat_1_value:           props.content.about?.stat_1_value          || '16+',
+    stat_1_label:           props.content.about?.stat_1_label          || 'Years Experience',
+    stat_2_value:           props.content.about?.stat_2_value          || 'Glasgow',
+    stat_2_label:           props.content.about?.stat_2_label          || 'Based in Rutherglen',
+    stat_3_value:           props.content.about?.stat_3_value          || 'ECU',
+    stat_3_label:           props.content.about?.stat_3_label          || 'Diagnostics Specialist',
+    stat_4_value:           props.content.about?.stat_4_value          || 'Scotland',
+    stat_4_label:           props.content.about?.stat_4_label          || 'Wide Coverage',
     who_intro_1:            props.content.about?.who_intro_1           || '',
     who_intro_2:            props.content.about?.who_intro_2           || '',
     who_intro_3:            props.content.about?.who_intro_3           || '',
@@ -655,7 +671,8 @@ function saveAbout() {
 
                 <!-- Quick Stats -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-5">Quick Stats Bar (4 items)</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-1">Quick Stats Bar</h2>
+                    <p class="text-sm text-gray-500 mb-5">These 4 stat badges appear on the About Us page hero banner (e.g. <strong>16+</strong> Years Experience, <strong>ECU</strong> Diagnostics Specialist). Edit the value and label for each.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div v-for="n in 4" :key="n" class="border border-gray-100 rounded-lg p-4 space-y-2">
                             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Stat {{ n }}</label>
@@ -757,6 +774,83 @@ function saveAbout() {
                     </button>
                 </div>
 
+            </div>
+
+            <!-- ===================== CONTACT TAB ===================== -->
+            <div v-if="activeTab === 'contact'" class="space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-1">Contact Details</h2>
+                    <p class="text-sm text-gray-500 mb-5">
+                        These details are shown in the website header, footer, and contact sections.
+                        The WhatsApp number is used for the floating green chat button — you can set a
+                        different number here if your WhatsApp business line differs from your main phone.
+                    </p>
+
+                    <div class="space-y-4 max-w-2xl">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address Line</label>
+                            <input v-model="contactForm.address" type="text"
+                                   placeholder="e.g. 59 Southcroft Rd, Rutherglen"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-500 focus:ring-electric-500" />
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">City / Town</label>
+                                <input v-model="contactForm.city" type="text"
+                                       placeholder="e.g. Glasgow"
+                                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-500 focus:ring-electric-500" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
+                                <input v-model="contactForm.postcode" type="text"
+                                       placeholder="e.g. G73 1UG"
+                                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-500 focus:ring-electric-500" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <input v-model="contactForm.phone" type="tel"
+                                       placeholder="e.g. +44 7760 926245"
+                                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-500 focus:ring-electric-500" />
+                                <p class="text-xs text-gray-400 mt-1">Shown in the header and footer click-to-call link</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input v-model="contactForm.email" type="email"
+                                       placeholder="e.g. info@doyenautos.co.uk"
+                                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-500 focus:ring-electric-500" />
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp number — highlighted -->
+                        <div class="border border-green-200 rounded-xl p-4 bg-green-50">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                                <label class="block text-sm font-medium text-green-800">WhatsApp Number (floating chat button)</label>
+                            </div>
+                            <input v-model="contactForm.whatsapp_number" type="tel"
+                                   placeholder="e.g. +44 7760 926245"
+                                   class="w-full rounded-lg border-green-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white" />
+                            <p class="text-xs text-green-700 mt-1.5">
+                                This number powers the green WhatsApp floating button on every page.
+                                Leave blank to use the Phone Number above.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-3">
+                        <button @click="saveContact" :disabled="contactForm.processing"
+                            class="px-6 py-2.5 bg-electric-600 hover:bg-electric-700 text-white font-medium rounded-lg transition disabled:opacity-50">
+                            {{ contactForm.processing ? 'Saving…' : 'Save Contact Details' }}
+                        </button>
+                        <span v-if="contactForm.wasSuccessful" class="text-sm text-green-600 font-medium">✓ Saved! Changes are live on the website.</span>
+                    </div>
+                </div>
             </div>
 
         </div>

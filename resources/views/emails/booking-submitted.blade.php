@@ -69,7 +69,7 @@
 
     <p style="margin-top: 30px; color: #64748b; font-size: 14px;">
         Have questions? Contact us at
-        <a href="tel:{{ preg_replace('/\s+/', '', env('GARAGE_PHONE', '07760926245')) }}" style="color:#3b82f6;">{{ env('GARAGE_PHONE', '07760 926 245') }}</a> or
-        <a href="mailto:{{ env('GARAGE_EMAIL', 'info@doyenautos.co.uk') }}" style="color:#3b82f6;">{{ env('GARAGE_EMAIL', 'info@doyenautos.co.uk') }}</a>
+        <a href="tel:{{ preg_replace('/[^0-9+]/', '', \App\Models\Setting::get('phone', '+44 141 482 0726')) }}" style="color:#3b82f6;">{{ \App\Models\Setting::get('phone', '+44 141 482 0726') }}</a> or
+        <a href="mailto:{{ \App\Models\Setting::get('email', 'info@doyenautos.co.uk') }}" style="color:#3b82f6;">{{ \App\Models\Setting::get('email', 'info@doyenautos.co.uk') }}</a>
     </p>
 @endsection

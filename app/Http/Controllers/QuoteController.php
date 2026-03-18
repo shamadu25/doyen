@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Part;
 use App\Services\SmsService;
 use App\Mail\QuoteCreated;
+use App\Mail\QuoteReviewRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
@@ -37,7 +38,9 @@ class QuoteController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('quote_number', 'like', "%{$search}%")
                   ->orWhereHas('customer', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
                   });
             });
         }
@@ -159,25 +162,43 @@ class QuoteController extends Controller
     }
 
     /**
-     * Send quote to customer
+     * Send quote to customer — delegates to sendForReview so the customer
+     * always receives the secure approve/decline link.
      */
     public function send(Quote $quote)
     {
-        if ($quote->status === 'converted') {
-            return back()->with('error', 'Cannot send a converted quote.');
+        return $this->sendForReview($quote);
+    }
+
+    /**
+     * Send quote to customer for review and approval via a secure token link.
+     */
+    public function sendForReview(Quote $quote)
+    {
+        if (in_array($quote->status, ['approved', 'converted'])) {
+            return back()->with('error', 'Cannot send an approved or converted quote for review.');
+        }
+
+        if (! $quote->review_token) {
+            $quote->generateReviewToken();
+            $quote->refresh();
         }
 
         $quote->update(['status' => 'sent']);
 
-        // Send email
-        Mail::to($quote->customer->email)->send(new QuoteCreated($quote));
+        $reviewUrl = route('quote.review', $quote->review_token);
 
-        // Send SMS if enabled
+        try {
+            Mail::to($quote->customer->email)->send(new QuoteReviewRequest($quote, $reviewUrl));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send quote review request email', ['error' => $e->getMessage()]);
+        }
+
         if ($this->smsService->isEnabled()) {
             $this->smsService->sendQuoteNotification($quote);
         }
 
-        return back()->with('success', 'Quote sent to customer successfully.');
+        return back()->with('success', 'Quote sent to customer for review and approval.');
     }
 
     /**

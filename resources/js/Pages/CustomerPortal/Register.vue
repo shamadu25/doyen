@@ -1,6 +1,9 @@
 ﻿<script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
+
+const garagePhone = computed(() => ((usePage().props as any).garageSettings?.phone) || '+44 141 482 0726')
+const garageTelHref = computed(() => 'tel:+44' + garagePhone.value.replace(/^\+44/, '').replace(/\s/g, ''))
 
 const form = ref({
     first_name: '',
@@ -162,7 +165,7 @@ function submit() {
             </div>
 
             <p class="text-center text-xs text-electric-400 mt-6">
-                Questions? Call <a href="tel:+441414820726" class="underline">+44 141 482 0726</a>
+                Questions? Call <a :href="garageTelHref" class="underline">{{ garagePhone }}</a>
             </p>
         </div>
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\WebsiteContent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -86,6 +87,14 @@ class WebsiteController extends Controller
             'instagram_url'  => '',
             'tiktok_url'     => '',
         ],
+        'contact' => [
+            'address'         => '59 Southcroft Rd, Rutherglen',
+            'city'            => 'Glasgow',
+            'postcode'        => 'G73 1UG',
+            'phone'           => '+44 7760 926245',
+            'email'           => 'info@doyenautos.co.uk',
+            'whatsapp_number' => '',
+        ],
         'about' => [
             'hero_badge'           => 'About Doyen Auto Services',
             'hero_headline'        => 'Glasgow-based Precision',
@@ -128,6 +137,18 @@ class WebsiteController extends Controller
             $content[$section] = array_merge($keys, $stored[$section] ?? []);
         }
 
+        // Contact section is stored in the Setting model (shared globally via garageSettings)
+        $settingsAll = Setting::getAllSettings();
+        $contactDefaults = $this->defaults()['contact'];
+        $content['contact'] = [
+            'address'         => $settingsAll['address']         ?? $settingsAll['garage_address']  ?? $contactDefaults['address'],
+            'city'            => $settingsAll['city']            ?? $settingsAll['garage_city']     ?? $contactDefaults['city'],
+            'postcode'        => $settingsAll['postcode']        ?? $settingsAll['garage_postcode'] ?? $contactDefaults['postcode'],
+            'phone'           => $settingsAll['phone']           ?? $settingsAll['garage_phone']    ?? $contactDefaults['phone'],
+            'email'           => $settingsAll['email']           ?? $settingsAll['garage_email']    ?? $contactDefaults['email'],
+            'whatsapp_number' => $settingsAll['whatsapp_number'] ?? '',
+        ];
+
         return Inertia::render('Website/Index', [
             'content' => $content,
         ]);
@@ -137,6 +158,24 @@ class WebsiteController extends Controller
     {
         if (!array_key_exists($section, $this->defaults())) {
             abort(404);
+        }
+
+        // Contact section is stored in the Setting model so it propagates site-wide
+        if ($section === 'contact') {
+            $validated = $request->validate([
+                'address'         => 'nullable|string|max:255',
+                'city'            => 'nullable|string|max:100',
+                'postcode'        => 'nullable|string|max:20',
+                'phone'           => 'nullable|string|max:30',
+                'email'           => 'nullable|email|max:255',
+                'whatsapp_number' => 'nullable|string|max:30',
+            ]);
+
+            foreach ($validated as $key => $value) {
+                Setting::set($key, $value ?? '', 'garage');
+            }
+
+            return back()->with('success', 'Contact details updated successfully.');
         }
 
         $data = $request->all();

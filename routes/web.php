@@ -19,6 +19,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\PublicQuoteReviewController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\VehicleHealthCheckController;
 use App\Http\Controllers\CustomerPortalController;
@@ -46,6 +47,12 @@ Route::post('/api/vehicle-lookup', [PublicBookingController::class, 'lookupVehic
 // Reschedule accept/decline (public, token-based)
 Route::get('/bookings/accept-reschedule/{token}', [AppointmentController::class, 'acceptReschedule'])->name('bookings.accept-reschedule');
 Route::get('/bookings/decline-reschedule/{token}', [AppointmentController::class, 'declineReschedule'])->name('bookings.decline-reschedule');
+
+// Public quote review (no login required — secure token-based)
+Route::get('/quote/review/{token}', [PublicQuoteReviewController::class, 'show'])->name('quote.review');
+Route::post('/quote/review/{token}/approve', [PublicQuoteReviewController::class, 'approve'])->name('quote.approve');
+Route::post('/quote/review/{token}/decline', [PublicQuoteReviewController::class, 'decline'])->name('quote.decline');
+Route::post('/quote/review/{token}/suggest-date', [PublicQuoteReviewController::class, 'suggestDate'])->name('quote.suggest-date');
 
 // Authentication
 Route::middleware('guest')->group(function () {
@@ -89,6 +96,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/bookings/{booking}/complete', [AppointmentController::class, 'complete'])->name('bookings.complete');
     Route::post('/bookings/{booking}/convert-to-job', [AppointmentController::class, 'convertToJob'])->name('bookings.convert-to-job');
     Route::post('/bookings/{booking}/reschedule', [AppointmentController::class, 'reschedule'])->name('bookings.reschedule');
+    Route::post('/bookings/{booking}/generate-quote', [AppointmentController::class, 'generateQuote'])->name('bookings.generate-quote');
 
     // Job Cards
     Route::resource('job-cards', JobCardController::class);
@@ -132,6 +140,9 @@ Route::middleware(['auth'])->group(function () {
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/booking-availability', [SettingsController::class, 'updateAvailability'])->name('settings.availability.update');
+    Route::post('/settings/closed-dates/add', [SettingsController::class, 'addClosedDate'])->name('settings.closed-dates.add');
+    Route::post('/settings/closed-dates/remove', [SettingsController::class, 'removeClosedDate'])->name('settings.closed-dates.remove');
 
     // Website Content Management
     Route::get('/website', [WebsiteController::class, 'index'])->name('website.index');
@@ -149,6 +160,7 @@ Route::middleware(['auth'])->group(function () {
     // Quotes / Estimates
     Route::resource('quotes', QuoteController::class);
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+    Route::post('/quotes/{quote}/send-for-review', [QuoteController::class, 'sendForReview'])->name('quotes.send-for-review');
     Route::post('/quotes/{quote}/approve', [QuoteController::class, 'approve'])->name('quotes.approve');
     Route::post('/quotes/{quote}/decline', [QuoteController::class, 'decline'])->name('quotes.decline');
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
@@ -189,10 +201,12 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerPortalController::class, 'showLogin'])->name('login');
     Route::post('/login', [CustomerPortalController::class, 'login'])->name('login.post');
+    Route::get('/registration', fn() => redirect('/customer/register', 301))->name('registration');
     Route::get('/register', [CustomerPortalController::class, 'showRegister'])->name('register');
     Route::post('/register', [CustomerPortalController::class, 'register'])->name('register.post');
     Route::get('/set-password', [CustomerPortalController::class, 'showSetPassword'])->name('set-password');
     Route::post('/set-password', [CustomerPortalController::class, 'setPassword'])->name('set-password.post');
+    Route::post('/forgot-password', [CustomerPortalController::class, 'forgotPassword'])->name('forgot-password');
     Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/appointments', [CustomerPortalController::class, 'appointments'])->name('appointments');
@@ -203,7 +217,10 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::post('/appointments/{appointment}/request-new-time', [CustomerPortalController::class, 'requestNewTime'])->name('appointments.request-new-time');
     Route::post('/appointments/{appointment}/keep-original', [CustomerPortalController::class, 'keepOriginalTime'])->name('appointments.keep-original');
     Route::get('/vehicles', [CustomerPortalController::class, 'vehicles'])->name('vehicles');
+    Route::post('/vehicles', [CustomerPortalController::class, 'storeVehicle'])->name('vehicles.store');
+    Route::delete('/vehicles/{vehicle}', [CustomerPortalController::class, 'deleteVehicle'])->name('vehicles.delete');
     Route::get('/invoices', [CustomerPortalController::class, 'invoices'])->name('invoices');
+    Route::get('/invoices/{invoice}/download', [CustomerPortalController::class, 'downloadInvoice'])->name('invoices.download');
     Route::get('/service-history', [CustomerPortalController::class, 'serviceHistory'])->name('service-history');
     Route::get('/quotes', [CustomerPortalController::class, 'quotes'])->name('quotes');
     Route::post('/quotes/{quote}/approve', [CustomerPortalController::class, 'approveQuote'])->name('quotes.approve');

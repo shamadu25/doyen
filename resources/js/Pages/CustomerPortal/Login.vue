@@ -1,11 +1,20 @@
 ﻿<script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-import { inject, ref } from 'vue'
+import { Head, router, usePage } from '@inertiajs/vue3'
+import { inject, ref, computed } from 'vue'
 
 const route = inject<(p: string) => string>('route', p => p)
 const form = ref({ email: '', password: '' })
 const errors = ref<any>({})
 const submitting = ref(false)
+
+const garageSettings = computed(() => (usePage().props.garageSettings as any) ?? {})
+const flash = computed(() => (usePage().props.flash as any) ?? {})
+
+// Forgot-password inline form
+const showForgotForm = ref(false)
+const forgotEmail = ref('')
+const forgotSubmitting = ref(false)
+const forgotErrors = ref<any>({})
 
 function submit() {
     submitting.value = true
@@ -13,6 +22,15 @@ function submit() {
     router.post(route('/customer/login'), form.value, {
         onError: (e) => { errors.value = e; submitting.value = false },
         onSuccess: () => { submitting.value = false },
+    })
+}
+
+function submitForgot() {
+    forgotSubmitting.value = true
+    forgotErrors.value = {}
+    router.post(route('/customer/forgot-password'), { email: forgotEmail.value }, {
+        onError: (e) => { forgotErrors.value = e; forgotSubmitting.value = false },
+        onSuccess: () => { forgotSubmitting.value = false; showForgotForm.value = false; forgotEmail.value = '' },
     })
 }
 </script>
@@ -50,18 +68,45 @@ function submit() {
                 </form>
 
                 <p class="text-center text-xs text-gray-500">
-                    Need help? Call us on <a href="tel:+441414820726" class="text-electric-600 hover:underline">+44 141 482 0726</a>
+                    Need help? Call us on
+                    <a :href="'tel:' + (garageSettings.phone ?? '')" class="text-electric-600 hover:underline">{{ garageSettings.phone || '+44 141 482 0726' }}</a>
                 </p>
 
-                <div class="border-t pt-4 space-y-2 text-center">
-                    <p class="text-sm text-gray-500">
-                        New customer?
-                        <a href="/customer/register" class="text-electric-600 hover:underline font-medium">Create an account</a>
-                    </p>
-                    <p class="text-xs text-gray-400">
-                        Booked before but haven't set a password?
-                        <a href="/customer/register" class="text-electric-600 hover:underline">Register here</a>
-                    </p>
+                <!-- Flash success -->
+                <div v-if="flash.success" class="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-800 text-sm">
+                    {{ flash.success }}
+                </div>
+
+                <!-- Forgot password -->
+                <div class="border-t pt-4">
+                    <div v-if="!showForgotForm" class="text-center">
+                        <button type="button" @click="showForgotForm = true" class="text-sm text-electric-600 hover:underline">
+                            Forgot your password?
+                        </button>
+                    </div>
+                    <div v-else class="space-y-3">
+                        <p class="text-sm font-medium text-gray-700">Send a password reset link</p>
+                        <div v-if="forgotErrors.email" class="text-xs text-red-600">{{ forgotErrors.email }}</div>
+                        <div class="flex gap-2">
+                            <input v-model="forgotEmail" type="email" placeholder="Your email address" required
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-electric-600" />
+                            <button type="button" @click="submitForgot" :disabled="forgotSubmitting"
+                                class="px-4 py-2 bg-electric-600 text-white rounded-lg text-sm font-medium hover:bg-electric-700 disabled:opacity-50 whitespace-nowrap">
+                                {{ forgotSubmitting ? 'Sending…' : 'Send Link' }}
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-400 text-center">
+                            <button type="button" @click="showForgotForm = false" class="hover:underline">Cancel</button>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Create account -->
+                <div class="border-t pt-4 text-center">
+                    <p class="text-sm text-gray-500">Don't have an account?</p>
+                    <a :href="route('/customer/register')" class="mt-1 inline-block text-sm font-medium text-electric-600 hover:underline">
+                        Create an account
+                    </a>
                 </div>
             </div>
         </div>

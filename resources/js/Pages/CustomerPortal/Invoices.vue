@@ -28,9 +28,18 @@ const statusColor: Record<string, string> = {
                                 Paid {{ fmt(inv.paid_amount) }} of {{ fmt(inv.total_amount) }}
                             </div>
                         </div>
-                        <div class="text-right flex-shrink-0">
+                        <div class="text-right flex-shrink-0 space-y-1.5">
                             <p class="font-semibold text-gray-900">{{ fmt(inv.total_amount) }}</p>
-                            <span :class="['inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 capitalize', statusColor[inv.status] || 'bg-gray-50 text-gray-600']">{{ inv.status }}</span>
+                            <span :class="['inline-block text-xs px-2 py-0.5 rounded-full font-medium capitalize', statusColor[inv.status] || 'bg-gray-50 text-gray-600']">{{ inv.status }}</span>
+                            <div>
+                                <a :href="`/customer/invoices/${inv.id}/download`" target="_blank"
+                                    class="inline-flex items-center gap-1 text-xs text-electric-600 hover:text-electric-700 font-medium hover:underline">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    Download PDF
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

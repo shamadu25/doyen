@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, inject, ref, nextTick } from 'vue'
+
+const garageSettings = computed(() => (usePage().props as any).garageSettings ?? {})
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import StatusBadge from '@/Components/StatusBadge.vue'
 import { loadStripe } from '@stripe/stripe-js'
@@ -112,7 +114,7 @@ function closeStripeModal() {
                     <p class="mt-1 text-sm text-gray-500">Issued {{ fmtDate(inv.invoice_date) }}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Link :href="route(`/invoices/${inv.id}/edit`)" v-if="inv.status === 'draft'" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Edit</Link>
+                    <Link :href="route(`/invoices/${inv.id}/edit`)" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Edit</Link>
                     <button v-if="inv.status === 'draft'" @click="sendInvoice" class="px-4 py-2 text-sm font-medium text-white bg-electric-600 rounded-lg hover:bg-electric-700">Send</button>
                     <button v-if="inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'partial'" @click="openStripeModal" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -130,9 +132,9 @@ function closeStripeModal() {
                 <!-- Header -->
                 <div class="flex justify-between mb-8">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">Doyen Auto Services</h2>
-                        <p class="text-sm text-gray-500">59 Southcroft Road, Rutherglen</p>
-                        <p class="text-sm text-gray-500">Glasgow, G73 1UG</p>
+                        <h2 class="text-xl font-bold text-gray-900">{{ garageSettings.garage_name || 'Doyen Auto Services' }}</h2>
+                        <p class="text-sm text-gray-500">{{ garageSettings.address || '59 Southcroft Road' }}, {{ garageSettings.city || 'Rutherglen, Glasgow' }}</p>
+                        <p class="text-sm text-gray-500">{{ garageSettings.postcode || 'G73 1UG' }}</p>
                     </div>
                     <div class="text-right">
                         <p class="text-2xl font-bold text-gray-900">INVOICE</p>
