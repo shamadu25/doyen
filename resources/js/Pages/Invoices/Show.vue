@@ -178,7 +178,7 @@ function closeStripeModal() {
                             <td class="py-3 text-right text-gray-600">{{ item.quantity }}</td>
                             <td class="py-3 text-right text-gray-600">{{ fmt(item.unit_price) }}</td>
                             <td class="py-3 text-right text-gray-500">{{ fmt(parseFloat(item.vat_amount ?? 0)) }}</td>
-                            <td class="py-3 text-right font-medium text-gray-900">{{ fmt(parseFloat(item.quantity) * parseFloat(item.unit_price)) }}</td>
+                            <td class="py-3 text-right font-medium text-gray-900">{{ fmt(parseFloat(item.line_total ?? (parseFloat(item.quantity) * parseFloat(item.unit_price))) + parseFloat(item.vat_amount ?? 0)) }}</td>
                         </tr>
                     </tbody>
                 </table>

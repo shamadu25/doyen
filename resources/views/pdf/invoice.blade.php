@@ -68,7 +68,7 @@
     $hdrWebsite  = !empty($garage['invoice_header_website'])  ? $garage['invoice_header_website']  : ($garage['website']     ?? '');
     $vatNumber     = $garage['vat_number']              ?? '';
     $vatRate       = $garage['vat_rate']                ?? '20';
-    $isVatDoc      = !empty($vatNumber);
+    $isVatDoc      = !empty($vatNumber) || $vatAmount > 0;
     $docTitle      = $isVatDoc ? 'VAT RECEIPT' : 'INVOICE';
     $companyNumber = $garage['invoice_company_number']  ?? '';
     $bankName      = $garage['invoice_bank_name']       ?? '';
