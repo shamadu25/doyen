@@ -31,6 +31,10 @@ use App\Http\Controllers\WhatsAppSupportController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AboutController;
+use App\Http\Controllers\SitemapController;
+
+// Sitemap & SEO
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');

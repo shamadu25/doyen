@@ -49,7 +49,9 @@ const formatCurrency = (v: number) => '£' + v.toLocaleString('en-GB', { minimum
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Dashboard | Doyen Auto Services">
+        <meta name="robots" content="noindex, nofollow" />
+    </Head>
     <AuthenticatedLayout>
         <div class="space-y-6">
             <!-- Header -->

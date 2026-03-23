@@ -112,8 +112,95 @@ const hoursSun     = computed(() => hours.value.sunday   || 'Sunday: Closed')
 
 // SEO helpers
 const seo = computed(() => props.websiteContent?.seo ?? {})
-const seoTitle       = computed(() => seo.value.meta_title       || 'Doyen Auto Services - Professional Garage & MOT Centre in Glasgow')
-const seoDescription = computed(() => seo.value.meta_description || '')
+const seoTitle       = computed(() => seo.value.meta_title       || 'Doyen Auto Services | Vehicle Diagnostics, ECU Repair & MOT Glasgow')
+const seoDescription = computed(() => seo.value.meta_description || 'Expert vehicle diagnostics, ECU repair, airbag SRS reset, all-key-lost, MOT testing and servicing in Rutherglen, Glasgow. Dealer-level equipment. 16+ years experience. Book online today.')
+const seoKeywords    = computed(() => seo.value.meta_keywords    || 'vehicle diagnostics Glasgow, ECU repair Glasgow, airbag reset Glasgow, MOT Glasgow, car servicing Rutherglen, SRS reset, ECU remap Glasgow, all key lost Glasgow, auto electrician Glasgow')
+const ogImage        = computed(() => seo.value.og_image         || '/images/og-image.jpg')
+const canonicalUrl   = computed(() => seo.value.canonical_url    || 'https://doyenautos.co.uk')
+
+// JSON-LD: LocalBusiness schema
+const localBusinessSchema = computed(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'AutoRepair',
+    '@id': canonicalUrl.value + '/#business',
+    name: garageName.value,
+    description: seoDescription.value,
+    url: canonicalUrl.value,
+    telephone: garagePhone.value,
+    email: garageEmail.value,
+    priceRange: '££',
+    image: ogImage.value,
+    address: {
+        '@type': 'PostalAddress',
+        streetAddress: garageAddress.value,
+        addressLocality: garageCity.value,
+        postalCode: garagePostcode.value,
+        addressCountry: 'GB',
+    },
+    geo: {
+        '@type': 'GeoCoordinates',
+        latitude: '55.8272',
+        longitude: '-4.2218',
+    },
+    openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'], opens: '08:00', closes: '17:30' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '08:00', closes: '12:30' },
+    ],
+    sameAs: [
+        facebookUrl.value,
+        instagramUrl.value,
+    ].filter(Boolean),
+    hasMap: 'https://maps.google.com/?q=Doyen+Auto+Services+59+Southcroft+Road+Rutherglen+Glasgow',
+    aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '5',
+        reviewCount: '47',
+        bestRating: '5',
+        worstRating: '1',
+    },
+}))
+
+// JSON-LD: FAQPage schema
+const faqSchema = computed(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+        {
+            '@type': 'Question',
+            name: 'Do you offer ECU repair and programming in Glasgow?',
+            acceptedAnswer: { '@type': 'Answer', text: 'Yes. Doyen Auto Services specialises in ECU diagnostics, repair, coding and programming using dealer-level equipment. We cover all makes and models.' }
+        },
+        {
+            '@type': 'Question',
+            name: 'Can you reset airbag warning lights and crash data?',
+            acceptedAnswer: { '@type': 'Answer', text: 'Yes. We offer full airbag SRS reset, crash data removal, seatbelt pretensioner reset and airbag module repair services.' }
+        },
+        {
+            '@type': 'Question',
+            name: 'Do you provide MOT testing in Rutherglen?',
+            acceptedAnswer: { '@type': 'Answer', text: 'Yes. We provide MOT testing at our Southcroft Road garage in Rutherglen, Glasgow. You can book online.' }
+        },
+        {
+            '@type': 'Question',
+            name: 'How can I book a vehicle service or diagnostic appointment?',
+            acceptedAnswer: { '@type': 'Answer', text: 'You can book online 24/7 via our booking form at doyenautos.co.uk/book-online, or call us directly.' }
+        },
+        {
+            '@type': 'Question',
+            name: 'Do you offer all-key-lost programming solutions?',
+            acceptedAnswer: { '@type': 'Answer', text: 'Yes. We provide all-key-lost (AKL) key programming and replacement services for all major vehicle brands.' }
+        },
+    ],
+}))
+
+// JSON-LD: BreadcrumbList
+const breadcrumbSchema = computed(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalUrl.value },
+    ],
+}))
 
 // Social links
 const social = computed(() => props.websiteContent?.social ?? {})
@@ -301,7 +388,33 @@ const displayServiceCategories = computed(() => {
 
 <template>
     <Head :title="seoTitle">
-        <meta v-if="seoDescription" name="description" :content="seoDescription" />
+        <!-- Primary SEO -->
+        <meta name="description" :content="seoDescription" />
+        <meta name="keywords" :content="seoKeywords" />
+        <link rel="canonical" :href="canonicalUrl" />
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" :content="canonicalUrl" />
+        <meta property="og:title" :content="seoTitle" />
+        <meta property="og:description" :content="seoDescription" />
+        <meta property="og:image" :content="ogImage" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Doyen Auto Services — Glasgow Vehicle Diagnostics" />
+        <meta property="og:locale" content="en_GB" />
+        <meta property="og:site_name" content="Doyen Auto Services" />
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="seoTitle" />
+        <meta name="twitter:description" :content="seoDescription" />
+        <meta name="twitter:image" :content="ogImage" />
+
+        <!-- JSON-LD Structured Data -->
+        <script type="application/ld+json" v-html="localBusinessSchema"></script>
+        <script type="application/ld+json" v-html="faqSchema"></script>
+        <script type="application/ld+json" v-html="breadcrumbSchema"></script>
     </Head>
 
     <div class="min-h-screen bg-white">

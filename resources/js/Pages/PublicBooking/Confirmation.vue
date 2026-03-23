@@ -47,7 +47,10 @@ const appointmentTypeLabels: Record<string, string> = {
 </script>
 
 <template>
-    <Head title="Booking Confirmed - Doyen Auto Services" />
+    <Head title="Booking Received | Doyen Auto Services">
+        <meta name="description" content="Your booking request has been received. Doyen Auto Services will confirm your appointment shortly." />
+        <meta name="robots" content="noindex, nofollow" />
+    </Head>
 
     <div class="min-h-screen bg-gray-50">
         <!-- Header -->

@@ -387,7 +387,16 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Book Online - Doyen Auto Services" />
+    <Head title="Book a Vehicle Service Online | Doyen Auto Services Glasgow">
+        <meta name="description" content="Book your MOT, car service, ECU diagnostic, airbag reset or repair online at Doyen Auto Services in Rutherglen, Glasgow. Fast, easy 3-step booking. No hidden charges." />
+        <meta name="keywords" content="book MOT Glasgow, book car service Glasgow, book ECU diagnostic, online car booking Rutherglen" />
+        <link rel="canonical" href="https://doyenautos.co.uk/book-online" />
+        <meta property="og:title" content="Book a Vehicle Service Online | Doyen Auto Services Glasgow" />
+        <meta property="og:description" content="Book your MOT, car service, ECU diagnostic or repair online in Rutherglen, Glasgow. Fast, easy 3-step booking." />
+        <meta property="og:url" content="https://doyenautos.co.uk/book-online" />
+        <meta property="og:type" content="website" />
+        <meta name="robots" content="index, follow" />
+    </Head>
 
     <div class="min-h-screen bg-gray-50">
         <!-- Header -->

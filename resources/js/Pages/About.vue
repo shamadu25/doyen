@@ -78,11 +78,70 @@ const services = [
     { icon: '🚗', name: 'Air Conditioning Services' },
     { icon: '🔩', name: 'Tyres, Brakes & Suspension' },
 ]
+
+const aboutTitle       = 'About Doyen Auto Services | Glasgow Vehicle Diagnostic Specialists'
+const aboutDescription = computed(() => `${garageName.value} is a Glasgow-based advanced vehicle diagnostics and repair specialist. Founded by ${founderName.value} with over 16 years of experience. Serving Rutherglen, Glasgow and across Scotland.`)
+const canonicalUrl     = 'https://doyenautos.co.uk/about'
+
+const aboutSchema = computed(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: aboutTitle,
+    description: aboutDescription.value,
+    url: canonicalUrl,
+    breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://doyenautos.co.uk' },
+            { '@type': 'ListItem', position: 2, name: 'About Us', item: canonicalUrl },
+        ],
+    },
+    mainEntity: {
+        '@type': 'AutoRepair',
+        name: garageName.value,
+        foundingDate: '2008',
+        founder: {
+            '@type': 'Person',
+            name: founderName.value,
+            jobTitle: founderTitle.value,
+        },
+        address: {
+            '@type': 'PostalAddress',
+            streetAddress: garageAddress.value,
+            addressLocality: garageCity.value,
+            postalCode: garagePostcode.value,
+            addressCountry: 'GB',
+        },
+        telephone: garagePhone.value,
+        email: garageEmail.value,
+        url: 'https://doyenautos.co.uk',
+    },
+}))
 </script>
 
 <template>
-    <Head title="About Us | Doyen Auto Services">
-        <meta name="description" content="Doyen Auto Services is a Glasgow-based advanced vehicle electrical diagnostics and repair specialist. Founded by Ganiyu Ajayi with over 16 years of automotive industry experience." />
+    <Head :title="aboutTitle">
+        <meta name="description" :content="aboutDescription" />
+        <meta name="keywords" content="about Doyen Auto Services, Glasgow garage, vehicle diagnostics specialist, ECU repair Glasgow, auto repair Rutherglen" />
+        <link rel="canonical" :href="canonicalUrl" />
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" :content="canonicalUrl" />
+        <meta property="og:title" :content="aboutTitle" />
+        <meta property="og:description" :content="aboutDescription" />
+        <meta property="og:image" content="/images/og-image.jpg" />
+        <meta property="og:locale" content="en_GB" />
+        <meta property="og:site_name" content="Doyen Auto Services" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="aboutTitle" />
+        <meta name="twitter:description" :content="aboutDescription" />
+        <meta name="twitter:image" content="/images/og-image.jpg" />
+
+        <!-- JSON-LD -->
+        <script type="application/ld+json" v-html="aboutSchema"></script>
     </Head>
 
     <div class="min-h-screen bg-white">

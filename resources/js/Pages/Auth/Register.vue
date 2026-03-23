@@ -17,7 +17,9 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Register" />
+    <Head title="Register | Doyen Auto Services">
+        <meta name="robots" content="noindex, nofollow" />
+    </Head>
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-950 via-navy-800 to-navy-950 px-4">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Vehicle;
+use App\Mail\AdminBookingAlert;
 use App\Mail\AppointmentConfirmation;
 use App\Mail\BookingSubmitted;
+use App\Services\SmsService;
 use App\Services\VehicleDataGlobalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -223,6 +225,22 @@ class PublicBookingController extends Controller
                     'customer_email' => $customer->email,
                     'error' => $e->getMessage()
                 ]);
+            }
+
+            // Notify admin of new booking via email and SMS
+            try {
+                $appointment->loadMissing(['customer', 'vehicle']);
+                $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+                if ($adminEmail) {
+                    Mail::to($adminEmail)->send(new AdminBookingAlert($appointment, 'new'));
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send admin booking alert email', ['error' => $e->getMessage()]);
+            }
+            try {
+                (new SmsService())->sendAdminBookingAlert($appointment);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send admin booking alert SMS', ['error' => $e->getMessage()]);
             }
 
             return redirect()->route('booking.confirmation', $appointment->id)

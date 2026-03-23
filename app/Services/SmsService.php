@@ -253,6 +253,81 @@ class SmsService
     }
 
     /**
+     * Send admin alert for new booking
+     */
+    public function sendAdminBookingAlert($appointment)
+    {
+        $adminPhone = env('ADMIN_PHONE', env('GARAGE_PHONE'));
+        if (!$adminPhone) {
+            return false;
+        }
+
+        $customer = $appointment->customer;
+        $vehicle  = $appointment->vehicle;
+        $garageName = env('GARAGE_NAME', 'DOYEN AUTO');
+
+        $message = "{$garageName}: NEW BOOKING ALERT\n\n"
+            . "Ref: " . $appointment->reference_number . "\n"
+            . "Customer: " . $customer->full_name . "\n"
+            . "Phone: " . $customer->phone . "\n"
+            . "Service: " . ucfirst(str_replace(['_', '-'], ' ', $appointment->appointment_type)) . "\n"
+            . "Vehicle: " . strtoupper($vehicle->registration_number) . "\n"
+            . "Date: " . \Carbon\Carbon::parse($appointment->scheduled_date)->format('D d/m/Y g:i A') . "\n"
+            . "Status: " . ucfirst($appointment->status);
+
+        return $this->send($adminPhone, $message);
+    }
+
+    /**
+     * Send admin alert for payment received
+     */
+    public function sendAdminPaymentAlert($payment, $invoice)
+    {
+        $adminPhone = env('ADMIN_PHONE', env('GARAGE_PHONE'));
+        if (!$adminPhone) {
+            return false;
+        }
+
+        $garageName = env('GARAGE_NAME', 'DOYEN AUTO');
+        $customer   = $invoice->customer;
+
+        $message = "{$garageName}: PAYMENT RECEIVED\n\n"
+            . "Invoice: " . $invoice->invoice_number . "\n"
+            . "Amount: £" . number_format($payment->amount, 2) . "\n"
+            . "Method: " . ucfirst($payment->payment_method) . "\n"
+            . "Customer: " . ($customer ? $customer->full_name : 'N/A') . "\n"
+            . "Invoice Status: " . ucfirst($invoice->status);
+
+        return $this->send($adminPhone, $message);
+    }
+
+    /**
+     * Send admin alert for a status change on a booking
+     */
+    public function sendAdminBookingStatusAlert($appointment, $status)
+    {
+        $adminPhone = env('ADMIN_PHONE', env('GARAGE_PHONE'));
+        if (!$adminPhone) {
+            return false;
+        }
+
+        $garageName = env('GARAGE_NAME', 'DOYEN AUTO');
+        $labels = [
+            'confirmed'  => 'BOOKING CONFIRMED',
+            'cancelled'  => 'BOOKING CANCELLED',
+            'completed'  => 'BOOKING COMPLETED',
+        ];
+        $label = $labels[$status] ?? strtoupper("BOOKING {$status}");
+
+        $message = "{$garageName}: {$label}\n\n"
+            . "Ref: " . $appointment->reference_number . "\n"
+            . "Customer: " . $appointment->customer->full_name . "\n"
+            . "Date: " . \Carbon\Carbon::parse($appointment->scheduled_date)->format('D d/m/Y g:i A');
+
+        return $this->send($adminPhone, $message);
+    }
+
+    /**
      * Send health check completed notification
      */
     public function sendHealthCheckCompleted($healthCheck)

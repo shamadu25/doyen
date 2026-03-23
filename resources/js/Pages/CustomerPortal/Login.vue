@@ -36,7 +36,10 @@ function submitForgot() {
 </script>
 
 <template>
-    <Head title="Customer Portal Login – Doyen Auto Services" />
+    <Head title="Customer Portal Login – Doyen Auto Services">
+        <meta name="description" content="Log in to your Doyen Auto Services customer portal to view your vehicle history, invoices and appointments." />
+        <meta name="robots" content="noindex, follow" />
+    </Head>
     <div class="min-h-screen bg-gradient-to-br from-navy-950 to-navy-800 flex items-center justify-center p-4">
         <div class="w-full max-w-md">
             <!-- Logo -->

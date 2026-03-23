@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PaymentRequest;
+use App\Mail\AdminPaymentAlert;
 use App\Models\ActivityLog;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class PaymentController extends Controller
@@ -84,6 +87,23 @@ class PaymentController extends Controller
         ]);
 
         ActivityLog::log('payment', "Payment of £{$payment->amount} received for invoice {$invoice->invoice_number}", $payment);
+
+        // Notify admin via email and SMS
+        $invoice->refresh()->load('customer');
+        try {
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminPaymentAlert($payment, $invoice));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin payment alert email', ['error' => $e->getMessage()]);
+        }
+        try {
+            (new SmsService())->sendAdminPaymentAlert($payment, $invoice);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin payment alert SMS', ['error' => $e->getMessage()]);
+        }
+
         return redirect()->route('payments.index')->with('success', "Payment of £{$payment->amount} recorded.");
     }
 
@@ -147,7 +167,7 @@ class PaymentController extends Controller
             if ($invoiceId) {
                 $invoice = Invoice::find($invoiceId);
                 if ($invoice) {
-                    Payment::create([
+                    $stripePayment = Payment::create([
                         'invoice_id' => $invoice->id,
                         'customer_id' => $invoice->customer_id,
                         'amount' => $intent->amount / 100,
@@ -164,6 +184,22 @@ class PaymentController extends Controller
                         'status' => $totalPaid >= $invoice->total_amount ? 'paid' : 'partial',
                         'paid_date' => $totalPaid >= $invoice->total_amount ? now() : null,
                     ]);
+
+                    // Notify admin of Stripe payment
+                    $invoice->refresh()->load('customer');
+                    try {
+                        $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+                        if ($adminEmail) {
+                            Mail::to($adminEmail)->send(new AdminPaymentAlert($stripePayment, $invoice));
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Admin Stripe payment alert email failed', ['error' => $e->getMessage()]);
+                    }
+                    try {
+                        (new SmsService())->sendAdminPaymentAlert($stripePayment, $invoice);
+                    } catch (\Exception $e) {
+                        \Log::warning('Admin Stripe payment alert SMS failed', ['error' => $e->getMessage()]);
+                    }
                 }
             }
         }

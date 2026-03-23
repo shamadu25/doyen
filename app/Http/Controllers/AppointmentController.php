@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\BookingRequest;
+use App\Mail\AdminBookingAlert;
 use App\Mail\AppointmentCancelled;
 use App\Mail\AppointmentConfirmation;
 use App\Mail\AppointmentRescheduled;
 use App\Mail\QuoteReviewRequest;
+use App\Services\SmsService;
 use App\Models\ActivityLog;
 use App\Models\Appointment;
 use App\Models\Customer;
@@ -95,6 +97,23 @@ class AppointmentController extends Controller
         ]));
 
         ActivityLog::log('created', "Booking {$booking->reference_number} created", $booking);
+
+        // Notify admin of new booking
+        try {
+            $booking->load(['customer', 'vehicle']);
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminBookingAlert($booking, 'new'));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking alert email', ['error' => $e->getMessage()]);
+        }
+        try {
+            (new SmsService())->sendAdminBookingAlert($booking);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking alert SMS', ['error' => $e->getMessage()]);
+        }
+
         return redirect()->route('bookings.show', $booking)->with('success', 'Booking created successfully.');
     }
 
@@ -141,6 +160,22 @@ class AppointmentController extends Controller
             ]);
         }
 
+        // Notify admin
+        try {
+            $booking->loadMissing(['customer', 'vehicle']);
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminBookingAlert($booking, 'confirmed'));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking confirmed alert', ['error' => $e->getMessage()]);
+        }
+        try {
+            (new SmsService())->sendAdminBookingStatusAlert($booking, 'confirmed');
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking confirmed SMS', ['error' => $e->getMessage()]);
+        }
+
         return back()->with('success', 'Booking confirmed and customer notified.');
     }
 
@@ -159,6 +194,22 @@ class AppointmentController extends Controller
             ]);
         }
 
+        // Notify admin
+        try {
+            $booking->loadMissing(['customer', 'vehicle']);
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminBookingAlert($booking, 'cancelled'));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking cancelled alert', ['error' => $e->getMessage()]);
+        }
+        try {
+            (new SmsService())->sendAdminBookingStatusAlert($booking, 'cancelled');
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin cancel SMS', ['error' => $e->getMessage()]);
+        }
+
         return back()->with('success', 'Booking cancelled and customer notified.');
     }
 
@@ -166,6 +217,23 @@ class AppointmentController extends Controller
     {
         $booking->update(['status' => 'completed']);
         ActivityLog::log('completed', "Booking {$booking->reference_number} completed", $booking);
+
+        // Notify admin
+        try {
+            $booking->loadMissing(['customer', 'vehicle']);
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL'));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminBookingAlert($booking, 'completed'));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking completed alert', ['error' => $e->getMessage()]);
+        }
+        try {
+            (new SmsService())->sendAdminBookingStatusAlert($booking, 'completed');
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin completed SMS', ['error' => $e->getMessage()]);
+        }
+
         return back()->with('success', 'Booking marked as completed.');
     }
 

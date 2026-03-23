@@ -1,2 +1,37 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /about
+Allow: /book-online
+Allow: /sitemap.xml
+
+# Block admin / internal / auth areas from indexing
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /logout
+Disallow: /dashboard
+Disallow: /bookings/
+Disallow: /customers/
+Disallow: /invoices/
+Disallow: /payments/
+Disallow: /job-cards/
+Disallow: /quotes/
+Disallow: /vehicles/
+Disallow: /staff/
+Disallow: /reports/
+Disallow: /settings/
+Disallow: /services/
+Disallow: /website/
+Disallow: /mot-tests/
+Disallow: /health-checks/
+Disallow: /ecu-jobs/
+Disallow: /suppliers/
+Disallow: /parts/
+Disallow: /customer/
+Disallow: /stripe/
+Disallow: /webhooks/
+Disallow: /api/
+Disallow: /quote/review/
+
+Sitemap: https://doyenautos.co.uk/sitemap.xml
