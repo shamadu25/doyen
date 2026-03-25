@@ -16,6 +16,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -120,7 +121,10 @@ class AppointmentController extends Controller
     public function show(Appointment $booking)
     {
         $booking->load(['customer', 'vehicle', 'assignedTo', 'jobCard', 'quote']);
-        return Inertia::render('Bookings/Show', ['booking' => $booking]);
+        return Inertia::render('Bookings/Show', [
+            'booking'        => $booking,
+            'defaultVatRate' => (float) Setting::get('vat_rate', 20),
+        ]);
     }
 
     public function edit(Appointment $booking)
@@ -376,6 +380,8 @@ class AppointmentController extends Controller
 
         $booking->load('customer', 'vehicle');
 
+        $vatRate = (float) Setting::get('vat_rate', 20);
+
         $quote = Quote::create([
             'customer_id'         => $booking->customer_id,
             'vehicle_id'          => $booking->vehicle_id,
@@ -386,6 +392,7 @@ class AppointmentController extends Controller
             'description'         => $booking->description ?? $booking->appointment_type,
             'notes'               => $request->input('notes'),
             'discount_percentage' => $request->input('discount_percentage', 0),
+            'vat_rate'            => $vatRate,
         ]);
 
         foreach ($request->input('items') as $itemData) {

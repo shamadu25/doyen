@@ -66,6 +66,7 @@ interface Booking {
 
 interface Props {
     booking: Booking
+    defaultVatRate: number
 }
 
 const props = defineProps<Props>()
@@ -192,8 +193,9 @@ const quoteTotal = computed(() => {
     const sub = quoteForm.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0)
     const disc = sub * (quoteForm.discount_percentage / 100)
     const afterDisc = sub - disc
-    const vat = afterDisc * 0.20
-    return { subtotal: sub, discount: disc, vat, total: afterDisc + vat }
+    const vatRate = props.defaultVatRate ?? 20
+    const vat = afterDisc * (vatRate / 100)
+    return { subtotal: sub, discount: disc, vat, total: afterDisc + vat, vatRate }
 })
 
 function submitQuote() {
@@ -369,17 +371,23 @@ function submitQuote() {
                                             <option value="part">Part</option>
                                         </select>
                                     </div>
-                                    <div class="col-span-5">
+                                    <div class="col-span-4">
                                         <label class="block text-xs text-gray-500 mb-1">Description</label>
                                         <input v-model="item.description" type="text" placeholder="e.g. Oil & Filter Change" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                     </div>
-                                    <div class="col-span-2">
+                                    <div class="col-span-1">
                                         <label class="block text-xs text-gray-500 mb-1">Qty</label>
                                         <input v-model.number="item.quantity" type="number" min="1" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-xs text-gray-500 mb-1">Unit £</label>
                                         <input v-model.number="item.unit_price" type="number" min="0" step="0.01" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs text-gray-500 mb-1">VAT ({{ quoteTotal.vatRate }}%)</label>
+                                        <div class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-600 text-right">
+                                            £{{ ((item.quantity * item.unit_price) * (quoteTotal.vatRate / 100)).toFixed(2) }}
+                                        </div>
                                     </div>
                                     <div class="col-span-1 pt-5">
                                         <button @click="removeQuoteItem(idx)" :disabled="quoteForm.items.length === 1" class="text-red-400 hover:text-red-600 disabled:opacity-30">
@@ -415,7 +423,7 @@ function submitQuote() {
                             <div class="rounded-lg bg-indigo-50 p-3 text-sm space-y-1 mb-4">
                                 <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>£{{ quoteTotal.subtotal.toFixed(2) }}</span></div>
                                 <div v-if="quoteTotal.discount > 0" class="flex justify-between text-red-600"><span>Discount</span><span>−£{{ quoteTotal.discount.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-gray-600"><span>VAT (20%)</span><span>£{{ quoteTotal.vat.toFixed(2) }}</span></div>
+                                <div class="flex justify-between text-gray-600"><span>VAT ({{ quoteTotal.vatRate }}%)</span><span>£{{ quoteTotal.vat.toFixed(2) }}</span></div>
                                 <div class="flex justify-between font-bold text-gray-900 border-t border-indigo-200 pt-1"><span>Total</span><span>£{{ quoteTotal.total.toFixed(2) }}</span></div>
                             </div>
 
