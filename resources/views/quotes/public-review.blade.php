@@ -180,7 +180,7 @@
                         <th>Qty</th>
                         <th>Unit Price</th>
                         <th>VAT ({{ $quote->vat_rate }}%)</th>
-                        <th>Total</th>
+                        <th>Total (inc. VAT)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,16 +193,16 @@
                         <td>{{ $item->quantity }}</td>
                         <td>£{{ number_format($item->unit_price, 2) }}</td>
                         <td>£{{ number_format($item->total_price * ($quote->vat_rate / 100), 2) }}</td>
-                        <td>£{{ number_format($item->total_price, 2) }}</td>
+                        <td>£{{ number_format($item->total_price * (1 + $quote->vat_rate / 100), 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
-                    @if($quote->discount_amount > 0)
                     <tr>
-                        <td colspan="4" style="text-align:right;color:#64748b;">Subtotal</td>
+                        <td colspan="4" style="text-align:right;color:#64748b;">Subtotal (ex. VAT)</td>
                         <td>£{{ number_format($quote->subtotal, 2) }}</td>
                     </tr>
+                    @if($quote->discount_amount > 0)
                     <tr>
                         <td colspan="4" style="text-align:right;color:#dc2626;">Discount ({{ $quote->discount_percentage }}%)</td>
                         <td style="color:#dc2626;">−£{{ number_format($quote->discount_amount, 2) }}</td>

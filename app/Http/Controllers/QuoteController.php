@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Models\Service;
 use App\Models\Part;
+use App\Models\Setting;
 use App\Services\SmsService;
 use App\Mail\QuoteCreated;
 use App\Mail\QuoteReviewRequest;
@@ -56,7 +57,12 @@ class QuoteController extends Controller
         $services = Service::where('is_active', true)->orderBy('name')->get();
         $parts = Part::where('is_active', true)->orderBy('name')->get();
 
-        return Inertia::render('Quotes/Create', ['customers' => $customers, 'services' => $services, 'parts' => $parts]);
+        return Inertia::render('Quotes/Create', [
+            'customers'      => $customers,
+            'services'       => $services,
+            'parts'          => $parts,
+            'defaultVatRate' => (float) Setting::get('vat_rate', 20),
+        ]);
     }
 
     public function store(Request $request)
@@ -76,6 +82,8 @@ class QuoteController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
+        $vatRate = (float) Setting::get('vat_rate', 20);
+
         $quote = Quote::create([
             'customer_id' => $validated['customer_id'],
             'vehicle_id' => $validated['vehicle_id'] ?? null,
@@ -85,6 +93,7 @@ class QuoteController extends Controller
             'description' => $validated['description'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'discount_percentage' => $validated['discount_percentage'] ?? 0,
+            'vat_rate'            => $vatRate,
             'status' => 'draft',
         ]);
 

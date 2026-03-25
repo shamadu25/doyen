@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3'
 import { inject, ref, computed, watch } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
-const props = defineProps<{ customers: any[], services: any[], parts: any[] }>()
+const props = defineProps<{ customers: any[], services: any[], parts: any[], defaultVatRate: number }>()
 const route = inject<(p: string) => string>('route', p => p)
 
 const form = ref({
@@ -46,7 +46,7 @@ function onPartChange(item: any) {
     if (p) { item.description = p.name; item.unit_price = p.sale_price ?? p.cost_price ?? 0 }
 }
 
-const vatRate = 20
+const vatRate = computed(() => props.defaultVatRate ?? 20)
 const subtotal = computed(() => form.value.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0))
 const discount = computed(() => subtotal.value * ((form.value.discount_percentage || 0) / 100))
 const vat = computed(() => (subtotal.value - discount.value) * (vatRate / 100))
@@ -175,7 +175,7 @@ async function submit() {
                             </div>
                         </div>
                         <div class="flex justify-between text-sm text-gray-600">
-                            <span>VAT (20%)</span><span>{{ fmt(vat) }}</span>
+                            <span>VAT ({{ vatRate }}%)</span><span>{{ fmt(vat) }}</span>
                         </div>
                         <div class="flex justify-between text-base font-bold text-gray-900 border-t pt-2">
                             <span>Total</span><span>{{ fmt(total) }}</span>
