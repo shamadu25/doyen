@@ -58,7 +58,16 @@ class Appointment extends Model
 
         static::creating(function ($appointment) {
             if (empty($appointment->reference_number)) {
-                $appointment->reference_number = 'DA-' . date('Y') . '-' . str_pad(static::whereYear('created_at', date('Y'))->count() + 1, 5, '0', STR_PAD_LEFT);
+                $year   = date('Y');
+                $prefix = 'DA-' . $year . '-';
+                // Use max() over existing refs (including soft-deleted) so failed
+                // or rolled-back transactions never cause a duplicate reference.
+                $lastRef    = static::withTrashed()
+                    ->where('reference_number', 'like', $prefix . '%')
+                    ->orderBy('reference_number', 'desc')
+                    ->value('reference_number');
+                $nextNumber = $lastRef ? (intval(substr($lastRef, strlen($prefix))) + 1) : 1;
+                $appointment->reference_number = $prefix . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
             }
         });
     }
