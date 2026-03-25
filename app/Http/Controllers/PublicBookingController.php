@@ -117,9 +117,10 @@ class PublicBookingController extends Controller
         try {
             DB::beginTransaction();
 
-            // Find or create customer
-            $customer = Customer::where('email', $request->customer_email)->first();
-            
+            // Find or create customer — use withTrashed() so soft-deleted records
+            // don't cause a duplicate-email constraint violation on re-booking.
+            $customer = Customer::withTrashed()->where('email', $request->customer_email)->first();
+
             if (!$customer) {
                 $customer = Customer::create([
                     'first_name' => $request->customer_first_name,
@@ -133,13 +134,17 @@ class PublicBookingController extends Controller
                     'is_active' => true,
                 ]);
             } else {
-                // Update customer details if they've changed
+                // Restore if previously soft-deleted, then update details
+                if ($customer->trashed()) {
+                    $customer->restore();
+                }
                 $customer->update([
                     'first_name' => $request->customer_first_name,
                     'last_name' => $request->customer_last_name,
                     'phone' => $request->customer_phone,
                     'address' => $request->customer_address ?? $customer->address,
                     'postcode' => $request->customer_postcode ?? $customer->postcode,
+                    'is_active' => true,
                 ]);
             }
 
