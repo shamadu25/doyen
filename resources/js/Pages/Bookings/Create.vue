@@ -13,7 +13,7 @@ interface Customer {
 interface Vehicle {
     id: number
     customer_id: number
-    registration: string
+    registration_number: string
     make: string
     model: string
     year: number | null
@@ -136,7 +136,7 @@ function submit() {
                                 >
                                     <option value="">{{ form.customer_id ? 'Select vehicle...' : 'Select a customer first' }}</option>
                                     <option v-for="v in filteredVehicles" :key="v.id" :value="v.id">
-                                        {{ v.registration }} — {{ v.make }} {{ v.model }}{{ v.year ? ` (${v.year})` : '' }}
+                                        {{ v.registration_number }} — {{ v.make }} {{ v.model }}{{ v.year ? ` (${v.year})` : '' }}
                                     </option>
                                 </select>
                                 <p v-if="form.errors.vehicle_id" class="mt-1 text-sm text-red-600">{{ form.errors.vehicle_id }}</p>

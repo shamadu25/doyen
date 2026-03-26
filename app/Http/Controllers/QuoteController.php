@@ -54,7 +54,20 @@ class QuoteController extends Controller
 
     public function create()
     {
-        $customers = Customer::select('id', 'first_name', 'last_name')->orderBy('first_name')->get()->map(fn($c) => ['id' => $c->id, 'name' => $c->first_name . ' ' . $c->last_name]);
+        $customers = Customer::select('id', 'first_name', 'last_name')
+            ->with(['vehicles' => fn($q) => $q->select('id', 'customer_id', 'registration_number', 'make', 'model', 'year')])
+            ->orderBy('first_name')->get()
+            ->map(fn($c) => [
+                'id'       => $c->id,
+                'name'     => $c->first_name . ' ' . $c->last_name,
+                'vehicles' => $c->vehicles->map(fn($v) => [
+                    'id'                  => $v->id,
+                    'registration_number' => $v->registration_number,
+                    'make'                => $v->make,
+                    'model'               => $v->model,
+                    'year'                => $v->year,
+                ])->values(),
+            ]);
         $services = Service::where('is_active', true)->orderBy('name')->get();
         $parts = Part::where('is_active', true)->orderBy('name')->get();
 
@@ -136,7 +149,20 @@ class QuoteController extends Controller
         }
 
         $quote->load('items');
-        $customers = Customer::select('id', 'first_name', 'last_name')->orderBy('first_name')->get()->map(fn($c) => ['id' => $c->id, 'name' => $c->first_name . ' ' . $c->last_name]);
+        $customers = Customer::select('id', 'first_name', 'last_name')
+            ->with(['vehicles' => fn($q) => $q->select('id', 'customer_id', 'registration_number', 'make', 'model', 'year')])
+            ->orderBy('first_name')->get()
+            ->map(fn($c) => [
+                'id'       => $c->id,
+                'name'     => $c->first_name . ' ' . $c->last_name,
+                'vehicles' => $c->vehicles->map(fn($v) => [
+                    'id'                  => $v->id,
+                    'registration_number' => $v->registration_number,
+                    'make'                => $v->make,
+                    'model'               => $v->model,
+                    'year'                => $v->year,
+                ])->values(),
+            ]);
         $services = Service::where('is_active', true)->orderBy('name')->get();
         $parts = Part::where('is_active', true)->orderBy('name')->get();
 
