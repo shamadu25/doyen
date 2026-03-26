@@ -396,6 +396,8 @@ class AppointmentController extends Controller
         ]);
 
         foreach ($request->input('items') as $itemData) {
+            $itemVatRate = isset($itemData['vat_rate']) ? (float) $itemData['vat_rate'] : $vatRate;
+            $taxExempt   = isset($itemData['tax_exempt']) ? (bool) $itemData['tax_exempt'] : false;
             QuoteItem::create([
                 'quote_id'    => $quote->id,
                 'item_type'   => $itemData['item_type'],
@@ -404,6 +406,8 @@ class AppointmentController extends Controller
                 'description' => $itemData['description'],
                 'quantity'    => $itemData['quantity'],
                 'unit_price'  => $itemData['unit_price'],
+                'vat_rate'    => $itemVatRate,
+                'tax_exempt'  => $taxExempt,
             ]);
         }
 

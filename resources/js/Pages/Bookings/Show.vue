@@ -167,6 +167,7 @@ interface QuoteItem {
     description: string
     quantity: number
     unit_price: number
+    vat_enabled: boolean
 }
 
 const quoteForm = useForm<{
@@ -175,35 +176,50 @@ const quoteForm = useForm<{
     validity_days: number
     discount_percentage: number
 }>({
-    items: [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0 }],
+    items: [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true }],
     notes: '',
     validity_days: 14,
     discount_percentage: 0,
 })
 
 function addQuoteItem() {
-    quoteForm.items.push({ item_type: 'labour', description: '', quantity: 1, unit_price: 0 })
+    quoteForm.items.push({ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true })
 }
 
 function removeQuoteItem(idx: number) {
     quoteForm.items.splice(idx, 1)
 }
 
+const vatRate = computed(() => Number(props.defaultVatRate) || 20)
+
 const quoteTotal = computed(() => {
-    const sub = quoteForm.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0)
-    const disc = sub * (quoteForm.discount_percentage / 100)
+    const rate = vatRate.value
+    const sub = quoteForm.items.reduce((s: number, i: QuoteItem) => s + (i.quantity * i.unit_price), 0)
+    const disc = sub * ((quoteForm.discount_percentage || 0) / 100)
     const afterDisc = sub - disc
-    const vatRate = props.defaultVatRate ?? 20
-    const vat = afterDisc * (vatRate / 100)
-    return { subtotal: sub, discount: disc, vat, total: afterDisc + vat, vatRate }
+    const discFactor = sub > 0 ? (afterDisc / sub) : 1
+    const vat = quoteForm.items.reduce((s: number, i: QuoteItem) => {
+        if (!i.vat_enabled) return s
+        return s + (i.quantity * i.unit_price) * discFactor * (rate / 100)
+    }, 0)
+    return { subtotal: sub, discount: disc, vat, total: afterDisc + vat, vatRate: rate }
 })
 
 function submitQuote() {
-    quoteForm.post(route(`/bookings/${props.booking.id}/generate-quote`), {
+    const rate = vatRate.value
+    const payload = {
+        ...quoteForm.data(),
+        items: quoteForm.items.map((i: QuoteItem) => ({
+            ...i,
+            vat_rate: i.vat_enabled ? rate : 0,
+            tax_exempt: !i.vat_enabled,
+        }))
+    }
+    quoteForm.transform(() => payload).post(route(`/bookings/${props.booking.id}/generate-quote`), {
         onSuccess: () => {
             showQuoteForm.value = false
             quoteForm.reset()
-            quoteForm.items = [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0 }]
+            quoteForm.items = [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true }]
         }
     })
 }
@@ -383,10 +399,11 @@ function submitQuote() {
                                         <label class="block text-xs text-gray-500 mb-1">Unit £</label>
                                         <input v-model.number="item.unit_price" type="number" min="0" step="0.01" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                     </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-xs text-gray-500 mb-1">VAT ({{ quoteTotal.vatRate }}%)</label>
-                                        <div class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-600 text-right">
-                                            £{{ ((item.quantity * item.unit_price) * (quoteTotal.vatRate / 100)).toFixed(2) }}
+                                    <div class="col-span-2 flex flex-col">
+                                        <label class="block text-xs text-gray-500 mb-1">VAT</label>
+                                        <div class="flex items-center gap-1.5 h-9">
+                                            <input type="checkbox" v-model="item.vat_enabled" :id="`qi-vat-${idx}`" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <label :for="`qi-vat-${idx}`" class="text-xs cursor-pointer select-none" :class="item.vat_enabled ? 'text-gray-700 font-medium' : 'text-gray-400'">{{ item.vat_enabled ? quoteTotal.vatRate + '%' : 'Exempt' }}</label>
                                         </div>
                                     </div>
                                     <div class="col-span-1 pt-5">
