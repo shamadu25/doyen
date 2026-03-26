@@ -14,6 +14,7 @@ use App\Mail\QuoteCreated;
 use App\Mail\QuoteReviewRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -76,36 +77,42 @@ class QuoteController extends Controller
             'notes' => 'nullable|string',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'items' => 'required|array|min:1',
-            'items.*.item_type' => 'required|in:service,part,labour',
+            'items.*.item_type'   => 'required|in:service,part,labour',
             'items.*.description' => 'required|string',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.quantity'    => 'required|integer|min:1',
+            'items.*.unit_price'  => 'required|numeric|min:0',
+            'items.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
+            'items.*.tax_exempt'  => 'nullable|boolean',
         ]);
 
-        $vatRate = (float) Setting::get('vat_rate', 20);
+        $defaultVatRate = (float) Setting::get('vat_rate', 20);
 
         $quote = Quote::create([
-            'customer_id' => $validated['customer_id'],
-            'vehicle_id' => $validated['vehicle_id'] ?? null,
-            'quote_date' => $validated['quote_date'],
-            'validity_days' => $validated['validity_days'],
-            'valid_until' => Carbon::parse($validated['quote_date'])->addDays($validated['validity_days']),
-            'description' => $validated['description'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'discount_percentage' => $validated['discount_percentage'] ?? 0,
-            'vat_rate'            => $vatRate,
-            'status' => 'draft',
+            'customer_id'        => $validated['customer_id'],
+            'vehicle_id'         => $validated['vehicle_id'] ?? null,
+            'quote_date'         => $validated['quote_date'],
+            'validity_days'      => $validated['validity_days'],
+            'valid_until'        => Carbon::parse($validated['quote_date'])->addDays($validated['validity_days']),
+            'description'        => $validated['description'] ?? null,
+            'notes'              => $validated['notes'] ?? null,
+            'discount_percentage'=> $validated['discount_percentage'] ?? 0,
+            'vat_rate'           => $defaultVatRate,
+            'status'             => 'draft',
         ]);
 
         foreach ($validated['items'] as $itemData) {
+            $taxExempt = !empty($itemData['tax_exempt']);
+            $itemVatRate = $taxExempt ? 0 : (float)($itemData['vat_rate'] ?? $defaultVatRate);
             QuoteItem::create([
-                'quote_id' => $quote->id,
-                'item_type' => $itemData['item_type'],
-                'service_id' => $itemData['service_id'] ?? null,
-                'part_id' => $itemData['part_id'] ?? null,
+                'quote_id'    => $quote->id,
+                'item_type'   => $itemData['item_type'],
+                'service_id'  => $itemData['service_id'] ?? null,
+                'part_id'     => $itemData['part_id'] ?? null,
                 'description' => $itemData['description'],
-                'quantity' => $itemData['quantity'],
-                'unit_price' => $itemData['unit_price'],
+                'quantity'    => $itemData['quantity'],
+                'unit_price'  => $itemData['unit_price'],
+                'vat_rate'    => $itemVatRate,
+                'tax_exempt'  => $taxExempt,
             ]);
         }
 
@@ -133,7 +140,13 @@ class QuoteController extends Controller
         $services = Service::where('is_active', true)->orderBy('name')->get();
         $parts = Part::where('is_active', true)->orderBy('name')->get();
 
-        return Inertia::render('Quotes/Edit', ['quote' => $quote, 'customers' => $customers, 'services' => $services, 'parts' => $parts]);
+        return Inertia::render('Quotes/Edit', [
+            'quote'          => $quote,
+            'customers'      => $customers,
+            'services'       => $services,
+            'parts'          => $parts,
+            'defaultVatRate' => (float) Setting::get('vat_rate', 20),
+        ]);
     }
 
     public function update(Request $request, Quote $quote)
@@ -143,16 +156,57 @@ class QuoteController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'vehicle_id' => 'nullable|exists:vehicles,id',
-            'quote_date' => 'required|date',
-            'validity_days' => 'required|integer|min:1|max:365',
-            'description' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'customer_id'         => 'required|exists:customers,id',
+            'vehicle_id'          => 'nullable|exists:vehicles,id',
+            'quote_date'          => 'required|date',
+            'validity_days'       => 'required|integer|min:1|max:365',
+            'description'         => 'nullable|string',
+            'notes'               => 'nullable|string',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'items'               => 'nullable|array',
+            'items.*.item_type'   => 'required_with:items|in:service,part,labour',
+            'items.*.description' => 'required_with:items|string',
+            'items.*.quantity'    => 'required_with:items|integer|min:1',
+            'items.*.unit_price'  => 'required_with:items|numeric|min:0',
+            'items.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
+            'items.*.tax_exempt'  => 'nullable|boolean',
         ]);
 
-        $quote->update($validated);
+        $defaultVatRate = (float) Setting::get('vat_rate', 20);
+
+        $quote->update([
+            'customer_id'         => $validated['customer_id'],
+            'vehicle_id'          => $validated['vehicle_id'] ?? null,
+            'quote_date'          => $validated['quote_date'],
+            'validity_days'       => $validated['validity_days'],
+            'valid_until'         => Carbon::parse($validated['quote_date'])->addDays($validated['validity_days']),
+            'description'         => $validated['description'] ?? null,
+            'notes'               => $validated['notes'] ?? null,
+            'discount_percentage' => $validated['discount_percentage'] ?? 0,
+            'vat_rate'            => $defaultVatRate,
+        ]);
+
+        // Replace items if provided
+        if (!empty($validated['items'])) {
+            $quote->items()->delete();
+            foreach ($validated['items'] as $itemData) {
+                $taxExempt  = !empty($itemData['tax_exempt']);
+                $itemVatRate = $taxExempt ? 0 : (float)($itemData['vat_rate'] ?? $defaultVatRate);
+                QuoteItem::create([
+                    'quote_id'    => $quote->id,
+                    'item_type'   => $itemData['item_type'],
+                    'service_id'  => $itemData['service_id'] ?? null,
+                    'part_id'     => $itemData['part_id'] ?? null,
+                    'description' => $itemData['description'],
+                    'quantity'    => $itemData['quantity'],
+                    'unit_price'  => $itemData['unit_price'],
+                    'vat_rate'    => $itemVatRate,
+                    'tax_exempt'  => $taxExempt,
+                ]);
+            }
+            $quote->refresh();
+            $quote->calculateTotals();
+        }
 
         return redirect()->route('quotes.show', $quote)
             ->with('success', 'Quote updated successfully.');
@@ -243,6 +297,22 @@ class QuoteController extends Controller
 
         return redirect()->route('job-cards.show', $jobCard)
             ->with('success', "Quote converted to Job Card #{$jobCard->job_number}");
+    }
+
+    /**
+     * Download quote as PDF.
+     */
+    public function download(Quote $quote)
+    {
+        $quote->load(['customer', 'vehicle', 'items']);
+        $garageSettings = Setting::getAllSettings();
+
+        $pdf = Pdf::loadView('pdf.quote', [
+            'quote'  => $quote,
+            'garage' => $garageSettings,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Quote-' . $quote->quote_number . '.pdf');
     }
 
     /**

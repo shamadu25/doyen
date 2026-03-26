@@ -18,11 +18,15 @@ class QuoteItem extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'vat_rate',
+        'tax_exempt',
     ];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
+        'unit_price'  => 'decimal:2',
         'total_price' => 'decimal:2',
+        'vat_rate'    => 'decimal:2',
+        'tax_exempt'  => 'boolean',
     ];
 
     protected static function boot()

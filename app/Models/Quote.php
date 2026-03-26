@@ -125,24 +125,37 @@ class Quote extends Model
     }
 
     /**
-     * Calculate totals
+     * Calculate totals, respecting per-item VAT rates and tax-exempt lines.
      */
     public function calculateTotals()
     {
-        $subtotal = $this->items->sum('total_price');
-        $discountAmount = $this->discount_percentage > 0 
-            ? ($subtotal * ($this->discount_percentage / 100)) 
+        $items = $this->items;
+        $subtotal = $items->sum('total_price'); // net ex-VAT (qty × unit_price)
+
+        $discountAmount = $this->discount_percentage > 0
+            ? round($subtotal * ($this->discount_percentage / 100), 2)
             : 0;
-        
-        $subtotalAfterDiscount = $subtotal - $discountAmount;
-        $vatAmount = $subtotalAfterDiscount * ($this->vat_rate / 100);
-        $total = $subtotalAfterDiscount + $vatAmount;
+
+        // Apply discount proportionally across all items
+        $discountRatio = $subtotal > 0 ? (1 - ($discountAmount / $subtotal)) : 1;
+
+        // Sum VAT per item, honouring each item's own vat_rate / tax_exempt flag
+        $vatAmount = $items->sum(function ($item) use ($discountRatio) {
+            if ($item->tax_exempt) {
+                return 0;
+            }
+            $itemRate = (float) ($item->vat_rate ?? $this->vat_rate ?? 20);
+            $net = (float) $item->total_price * $discountRatio;
+            return round($net * ($itemRate / 100), 2);
+        });
+
+        $total = ($subtotal - $discountAmount) + $vatAmount;
 
         $this->update([
-            'subtotal' => $subtotal,
+            'subtotal'        => round($subtotal, 2),
             'discount_amount' => $discountAmount,
-            'vat_amount' => $vatAmount,
-            'total_amount' => $total,
+            'vat_amount'      => round($vatAmount, 2),
+            'total_amount'    => round($total, 2),
         ]);
     }
 

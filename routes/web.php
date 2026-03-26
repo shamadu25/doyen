@@ -168,6 +168,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/quotes/{quote}/approve', [QuoteController::class, 'approve'])->name('quotes.approve');
     Route::post('/quotes/{quote}/decline', [QuoteController::class, 'decline'])->name('quotes.decline');
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
+    Route::get('/quotes/{quote}/download', [QuoteController::class, 'download'])->name('quotes.download');
 
     // Staff Management
     Route::resource('staff', StaffController::class);

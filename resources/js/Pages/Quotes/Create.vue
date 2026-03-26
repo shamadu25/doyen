@@ -29,7 +29,7 @@ watch(() => form.value.customer_id, (id) => {
 })
 
 function addItem(type: string) {
-    form.value.items.push({ item_type: type, description: '', quantity: 1, unit_price: 0, service_id: null, part_id: null })
+    form.value.items.push({ item_type: type, description: '', quantity: 1, unit_price: 0, service_id: null, part_id: null, vat_enabled: true })
 }
 
 function removeItem(i: number) {
@@ -49,7 +49,11 @@ function onPartChange(item: any) {
 const vatRate = computed(() => props.defaultVatRate ?? 20)
 const subtotal = computed(() => form.value.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0))
 const discount = computed(() => subtotal.value * ((form.value.discount_percentage || 0) / 100))
-const vat = computed(() => (subtotal.value - discount.value) * (vatRate / 100))
+const discountFactor = computed(() => 1 - ((form.value.discount_percentage || 0) / 100))
+const vat = computed(() => form.value.items.reduce((s, i) => {
+    if (!i.vat_enabled) return s
+    return s + (i.quantity * i.unit_price) * discountFactor.value * (vatRate.value / 100)
+}, 0))
 const total = computed(() => subtotal.value - discount.value + vat.value)
 
 function fmt(v: number) { return '£' + v.toFixed(2) }
@@ -57,7 +61,14 @@ function fmt(v: number) { return '£' + v.toFixed(2) }
 async function submit() {
     submitting.value = true
     errors.value = {}
-    router.post(route('/quotes'), form.value, {
+    router.post(route('/quotes'), {
+        ...form.value,
+        items: form.value.items.map((i: any) => ({
+            ...i,
+            vat_rate: i.vat_enabled ? vatRate.value : 0,
+            tax_exempt: !i.vat_enabled,
+        }))
+    }, {
         onError: (e) => { errors.value = e; submitting.value = false },
         onSuccess: () => { submitting.value = false },
     })
@@ -128,43 +139,56 @@ async function submit() {
                         Add labour, parts or services using the buttons above
                     </div>
 
-                    <div v-for="(item, i) in form.items" :key="i" class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
-                        <div class="col-span-1">
-                            <span :class="['inline-block px-1.5 py-0.5 rounded text-xs font-medium', item.item_type === 'labour' ? 'bg-electric-100 text-electric-700' : item.item_type === 'part' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700']">
-                                {{ item.item_type[0].toUpperCase() }}
-                            </span>
-                        </div>
-                        <div class="col-span-5">
-                            <select v-if="item.item_type === 'service'" v-model="item.service_id" @change="onServiceChange(item)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm mb-1">
-                                <option value="">Pick service...</option>
-                                <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
-                            </select>
-                            <select v-else-if="item.item_type === 'part'" v-model="item.part_id" @change="onPartChange(item)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm mb-1">
-                                <option value="">Pick part...</option>
-                                <option v-for="p in parts" :key="p.id" :value="p.id">{{ p.name }}</option>
-                            </select>
-                            <input v-model="item.description" type="text" placeholder="Description" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
-                        </div>
-                        <div class="col-span-2">
-                            <input v-model.number="item.quantity" type="number" min="1" placeholder="Qty" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
-                        </div>
-                        <div class="col-span-3">
-                            <div class="relative">
-                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">£</span>
-                                <input v-model.number="item.unit_price" type="number" min="0" step="0.01" placeholder="0.00" class="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-sm" />
+                    <div v-for="(item, i) in form.items" :key="i" class="p-3 bg-gray-50 rounded-lg space-y-2">
+                        <div class="grid grid-cols-12 gap-2 items-start">
+                            <div class="col-span-1">
+                                <span :class="['inline-block px-1.5 py-0.5 rounded text-xs font-medium', item.item_type === 'labour' ? 'bg-electric-100 text-electric-700' : item.item_type === 'part' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700']">
+                                    {{ item.item_type[0].toUpperCase() }}
+                                </span>
+                            </div>
+                            <div class="col-span-5">
+                                <select v-if="item.item_type === 'service'" v-model="item.service_id" @change="onServiceChange(item)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm mb-1">
+                                    <option value="">Pick service...</option>
+                                    <option v-for="s in services" :key="s.id" :value="s.id">{{ s.name }}</option>
+                                </select>
+                                <select v-else-if="item.item_type === 'part'" v-model="item.part_id" @change="onPartChange(item)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm mb-1">
+                                    <option value="">Pick part...</option>
+                                    <option v-for="p in parts" :key="p.id" :value="p.id">{{ p.name }}</option>
+                                </select>
+                                <input v-model="item.description" type="text" placeholder="Description" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
+                            </div>
+                            <div class="col-span-2">
+                                <input v-model.number="item.quantity" type="number" min="1" placeholder="Qty" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
+                            </div>
+                            <div class="col-span-3">
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">£</span>
+                                    <input v-model.number="item.unit_price" type="number" min="0" step="0.01" placeholder="0.00" class="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-sm" />
+                                </div>
+                            </div>
+                            <div class="col-span-1 text-right">
+                                <button type="button" @click="removeItem(i)" class="text-red-400 hover:text-red-600 p-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
                             </div>
                         </div>
-                        <div class="col-span-1 text-right">
-                            <button type="button" @click="removeItem(i)" class="text-red-400 hover:text-red-600 p-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
+                        <!-- Per-item VAT toggle -->
+                        <div class="flex items-center gap-3 pl-7">
+                            <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+                                <input type="checkbox" v-model="item.vat_enabled" class="rounded border-gray-300 text-electric-600 focus:ring-electric-500" />
+                                <span>VAT ({{ vatRate }}%)</span>
+                            </label>
+                            <span v-if="item.vat_enabled" class="text-xs text-gray-500">
+                                +{{ fmt(item.quantity * item.unit_price * (vatRate / 100)) }} VAT on this item
+                            </span>
+                            <span v-else class="text-xs text-amber-600 font-medium">Tax Exempt</span>
                         </div>
                     </div>
 
                     <!-- Totals -->
                     <div v-if="form.items.length" class="border-t pt-4 space-y-2">
                         <div class="flex justify-between text-sm text-gray-600">
-                            <span>Subtotal</span><span>{{ fmt(subtotal) }}</span>
+                            <span>Subtotal (ex. VAT)</span><span>{{ fmt(subtotal) }}</span>
                         </div>
                         <div class="flex items-center justify-between text-sm text-gray-600">
                             <span>Discount</span>
@@ -178,7 +202,7 @@ async function submit() {
                             <span>VAT ({{ vatRate }}%)</span><span>{{ fmt(vat) }}</span>
                         </div>
                         <div class="flex justify-between text-base font-bold text-gray-900 border-t pt-2">
-                            <span>Total</span><span>{{ fmt(total) }}</span>
+                            <span>Total (inc. VAT)</span><span>{{ fmt(total) }}</span>
                         </div>
                     </div>
                 </div>

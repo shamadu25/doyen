@@ -87,7 +87,7 @@
 <body>
 <div class="header">
     <h1>{{ config('app.garage_name', 'Doyen Auto Services') }}</h1>
-    <p>Quote Review &amp; Approval</p>
+    <p>VAT Quote &amp; Estimate Review</p>
 </div>
 
 <div class="container">
@@ -179,12 +179,18 @@
                         <th>Description</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
-                        <th>VAT ({{ $quote->vat_rate }}%)</th>
+                        <th>VAT</th>
                         <th>Total (inc. VAT)</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($quote->items as $item)
+                    @php
+                        $itemVatRate = $item->tax_exempt ? 0 : (float)($item->vat_rate ?? $quote->vat_rate ?? 20);
+                        $netPrice    = $item->total_price;
+                        $vatAmt      = round($netPrice * $itemVatRate / 100, 2);
+                        $gross       = $netPrice + $vatAmt;
+                    @endphp
                     <tr>
                         <td>
                             <div class="item-type">{{ $item->item_type }}</div>
@@ -192,8 +198,14 @@
                         </td>
                         <td>{{ $item->quantity }}</td>
                         <td>£{{ number_format($item->unit_price, 2) }}</td>
-                        <td>£{{ number_format($item->total_price * ($quote->vat_rate / 100), 2) }}</td>
-                        <td>£{{ number_format($item->total_price * (1 + $quote->vat_rate / 100), 2) }}</td>
+                        <td>
+                            @if($item->tax_exempt)
+                                <span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:2px 6px;border-radius:3px;font-weight:700;">EXEMPT</span>
+                            @else
+                                {{ number_format($itemVatRate, 0) }}% / £{{ number_format($vatAmt, 2) }}
+                            @endif
+                        </td>
+                        <td>£{{ number_format($gross, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>

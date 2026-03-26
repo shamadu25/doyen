@@ -287,8 +287,31 @@
 
     {{-- VAT SUMMARY (VAT-registered only) --}}
     @if($isVatDoc)
+    @php
+        // Build per-rate VAT groups from line items for accurate UK VAT analysis
+        $vatGroups = [];
+        foreach (($invoice->items ?? $invoice->invoiceItems ?? []) as $lineItem) {
+            $lQty   = (float)($lineItem->quantity  ?? 1);
+            $lUnit  = (float)($lineItem->unit_price ?? 0);
+            $lDisc  = (float)($lineItem->discount   ?? 0);
+            $lNet   = ($lQty * $lUnit) - $lDisc;
+            $lRate  = (float)($lineItem->vat_rate   ?? $vatRate ?? 20);
+            if ($lRate == 0) {
+                $code = 'Z'; $desc = 'Zero-Rated';
+            } else {
+                $code = 'S'; $desc = 'Standard Rate';
+            }
+            $key = $code . '_' . $lRate;
+            $lVat = round($lNet * $lRate / 100, 2);
+            if (!isset($vatGroups[$key])) {
+                $vatGroups[$key] = ['code' => $code, 'desc' => $desc, 'rate' => $lRate, 'net' => 0, 'vat' => 0];
+            }
+            $vatGroups[$key]['net'] += $lNet;
+            $vatGroups[$key]['vat'] += $lVat;
+        }
+    @endphp
     <div class="vat-summary">
-        <div class="section-label">VAT Summary</div>
+        <div class="section-label">VAT Analysis</div>
         <table class="vat-summary-table">
             <thead>
                 <tr>
@@ -301,10 +324,18 @@
                 </tr>
             </thead>
             <tbody>
+                @foreach($vatGroups as $g)
                 <tr>
-                    <td>S</td>
-                    <td>Standard Rate</td>
-                    <td>{{ $vatRate }}%</td>
+                    <td>{{ $g['code'] }}</td>
+                    <td>{{ $g['desc'] }}</td>
+                    <td>{{ $g['rate'] > 0 ? $g['rate'].'%' : '0%' }}</td>
+                    <td class="r">&pound;{{ number_format($g['net'], 2) }}</td>
+                    <td class="r">&pound;{{ number_format($g['vat'], 2) }}</td>
+                    <td class="r">&pound;{{ number_format($g['net'] + $g['vat'], 2) }}</td>
+                </tr>
+                @endforeach
+                <tr style="font-weight:700;background:#f1f5f9;">
+                    <td colspan="3">Total</td>
                     <td class="r">&pound;{{ number_format($subtotal - $discount, 2) }}</td>
                     <td class="r">&pound;{{ number_format($vatAmount, 2) }}</td>
                     <td class="r">&pound;{{ number_format($totalAmount, 2) }}</td>
