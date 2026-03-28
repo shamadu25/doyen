@@ -18,14 +18,33 @@ const fallbackTestimonials = [
     { name: 'Carolyn P.', location: 'Cambuslang', service: 'Diagnostics', text: 'Professional and clear communication. Correct fault resolved first time.', rating: 5 },
 ]
 
+function normalizeRating(value: unknown): number {
+    const parsed = Number.parseInt(String(value ?? 5), 10)
+    if (!Number.isFinite(parsed)) return 5
+    return Math.min(5, Math.max(1, parsed))
+}
+
+function normalizeItem(item: any) {
+    return {
+        name: String(item?.name ?? 'Customer'),
+        location: String(item?.location ?? 'Glasgow'),
+        service: String(item?.service ?? 'Vehicle Service'),
+        text: String(item?.text ?? 'Great service and clear communication.'),
+        rating: normalizeRating(item?.rating),
+    }
+}
+
 const testimonials = computed(() => {
     const raw = props.websiteContent?.testimonials?.items
-    if (!raw) return fallbackTestimonials
+    if (!raw) return fallbackTestimonials.map(normalizeItem)
     try {
         const parsed = JSON.parse(raw)
-        return Array.isArray(parsed) ? parsed : fallbackTestimonials
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            return fallbackTestimonials.map(normalizeItem)
+        }
+        return parsed.map(normalizeItem)
     } catch {
-        return fallbackTestimonials
+        return fallbackTestimonials.map(normalizeItem)
     }
 })
 </script>
