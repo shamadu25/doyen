@@ -35,6 +35,14 @@ class QuoteItem extends Model
 
         static::saving(function ($item) {
             $item->total_price = $item->quantity * $item->unit_price;
+
+            // Keep VAT treatment explicit per line for UK quote compliance.
+            $item->tax_exempt = (bool) ($item->tax_exempt ?? false);
+            if ($item->tax_exempt) {
+                $item->vat_rate = 0;
+            } elseif ($item->vat_rate === null) {
+                $item->vat_rate = (float) ($item->quote?->vat_rate ?? 20);
+            }
         });
 
         static::saved(function ($item) {

@@ -167,7 +167,7 @@ interface QuoteItem {
     description: string
     quantity: number
     unit_price: number
-    vat_enabled: boolean
+    tax_exempt: boolean
 }
 
 const quoteForm = useForm<{
@@ -176,14 +176,14 @@ const quoteForm = useForm<{
     validity_days: number
     discount_percentage: number
 }>({
-    items: [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true }],
+    items: [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, tax_exempt: false }],
     notes: '',
     validity_days: 14,
     discount_percentage: 0,
 })
 
 function addQuoteItem() {
-    quoteForm.items.push({ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true })
+    quoteForm.items.push({ item_type: 'labour', description: '', quantity: 1, unit_price: 0, tax_exempt: false })
 }
 
 function removeQuoteItem(idx: number) {
@@ -191,16 +191,23 @@ function removeQuoteItem(idx: number) {
 }
 
 const vatRate = computed(() => Number(props.defaultVatRate) || 20)
+const quoteLineNet = (item: QuoteItem) => (Number(item.quantity) || 0) * (Number(item.unit_price) || 0)
+const quoteDiscountFactor = computed(() => {
+    const sub = quoteForm.items.reduce((s: number, i: QuoteItem) => s + quoteLineNet(i), 0)
+    const afterDisc = sub - (sub * ((quoteForm.discount_percentage || 0) / 100))
+    return sub > 0 ? (afterDisc / sub) : 1
+})
+const quoteLineVat = (item: QuoteItem) => item.tax_exempt ? 0 : quoteLineNet(item) * quoteDiscountFactor.value * (vatRate.value / 100)
+const quoteLineGross = (item: QuoteItem) => (quoteLineNet(item) * quoteDiscountFactor.value) + quoteLineVat(item)
 
 const quoteTotal = computed(() => {
     const rate = vatRate.value
-    const sub = quoteForm.items.reduce((s: number, i: QuoteItem) => s + (i.quantity * i.unit_price), 0)
+    const sub = quoteForm.items.reduce((s: number, i: QuoteItem) => s + quoteLineNet(i), 0)
     const disc = sub * ((quoteForm.discount_percentage || 0) / 100)
     const afterDisc = sub - disc
-    const discFactor = sub > 0 ? (afterDisc / sub) : 1
     const vat = quoteForm.items.reduce((s: number, i: QuoteItem) => {
-        if (!i.vat_enabled) return s
-        return s + (i.quantity * i.unit_price) * discFactor * (rate / 100)
+        if (i.tax_exempt) return s
+        return s + quoteLineVat(i)
     }, 0)
     return { subtotal: sub, discount: disc, vat, total: afterDisc + vat, vatRate: rate }
 })
@@ -211,15 +218,15 @@ function submitQuote() {
         ...quoteForm.data(),
         items: quoteForm.items.map((i: QuoteItem) => ({
             ...i,
-            vat_rate: i.vat_enabled ? rate : 0,
-            tax_exempt: !i.vat_enabled,
+            vat_rate: i.tax_exempt ? 0 : rate,
+            tax_exempt: !!i.tax_exempt,
         }))
     }
     quoteForm.transform(() => payload).post(route(`/bookings/${props.booking.id}/generate-quote`), {
         onSuccess: () => {
             showQuoteForm.value = false
             quoteForm.reset()
-            quoteForm.items = [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, vat_enabled: true }]
+            quoteForm.items = [{ item_type: 'labour', description: '', quantity: 1, unit_price: 0, tax_exempt: false }]
         }
     })
 }
@@ -374,7 +381,7 @@ function submitQuote() {
                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 </button>
                             </div>
-                            <p class="text-sm text-gray-500 mb-4">Add line items below. The quote will be emailed to the customer with a secure link to approve or decline.</p>
+                            <p class="text-sm text-gray-500 mb-4">Add line items below. Unit prices are ex. VAT, VAT is calculated inline per line, and the quote will be emailed to the customer with a secure approval link.</p>
 
                             <!-- Line Items -->
                             <div class="space-y-3 mb-4">
@@ -400,11 +407,15 @@ function submitQuote() {
                                         <input v-model.number="item.unit_price" type="number" min="0" step="0.01" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                     </div>
                                     <div class="col-span-2 flex flex-col">
-                                        <label class="block text-xs text-gray-500 mb-1">VAT</label>
-                                        <div class="flex items-center gap-1.5 h-9">
-                                            <input type="checkbox" v-model="item.vat_enabled" :id="`qi-vat-${idx}`" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                            <label :for="`qi-vat-${idx}`" class="text-xs cursor-pointer select-none" :class="item.vat_enabled ? 'text-gray-700 font-medium' : 'text-gray-400'">{{ item.vat_enabled ? quoteTotal.vatRate + '%' : 'Exempt' }}</label>
+                                        <label class="block text-xs text-gray-500 mb-1">VAT / Tax</label>
+                                        <label :for="`qi-vat-${idx}`" class="flex items-center gap-1.5 h-5">
+                                            <input type="checkbox" v-model="item.tax_exempt" :id="`qi-vat-${idx}`" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <span class="text-xs cursor-pointer select-none" :class="item.tax_exempt ? 'text-amber-700 font-medium' : 'text-gray-600'">Tax Exempt</span>
+                                        </label>
+                                        <div class="text-[11px] mt-1" :class="item.tax_exempt ? 'text-amber-700' : 'text-gray-500'">
+                                            {{ item.tax_exempt ? 'VAT £0.00' : `${quoteTotal.vatRate}% · £${quoteLineVat(item).toFixed(2)}` }}
                                         </div>
+                                        <div class="text-[11px] text-gray-500">Line total £{{ quoteLineGross(item).toFixed(2) }}</div>
                                     </div>
                                     <div class="col-span-1 pt-5">
                                         <button @click="removeQuoteItem(idx)" :disabled="quoteForm.items.length === 1" class="text-red-400 hover:text-red-600 disabled:opacity-30">

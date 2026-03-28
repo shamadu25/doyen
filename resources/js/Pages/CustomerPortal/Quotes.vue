@@ -9,6 +9,21 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
 
 function fmt(v: any) { return '£' + parseFloat(v || 0).toFixed(2) }
 function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB') : '—' }
+function quoteDiscountFactor(quote: any) {
+    const subtotal = parseFloat(String(quote?.subtotal || 0))
+    const discount = parseFloat(String(quote?.discount_amount || 0))
+    return subtotal > 0 ? ((subtotal - discount) / subtotal) : 1
+}
+function lineNet(item: any, quote: any) {
+    const rawNet = parseFloat(String(item?.total_price ?? ((item?.quantity || 0) * (item?.unit_price || 0))))
+    return rawNet * quoteDiscountFactor(quote)
+}
+function lineVat(item: any, quote: any) {
+    if (item?.tax_exempt) return 0
+    const rate = parseFloat(String(item?.vat_rate ?? quote?.vat_rate ?? 20))
+    return lineNet(item, quote) * (rate / 100)
+}
+function lineGross(item: any, quote: any) { return lineNet(item, quote) + lineVat(item, quote) }
 
 const confirmAction = ref<{ quoteId: number; action: 'approve' | 'reject' } | null>(null)
 const submitting = ref(false)
@@ -27,15 +42,15 @@ function executeAction() {
 
 const statusLabels: Record<string, string> = {
     draft: 'Draft', sent: 'Awaiting Approval', approved: 'Approved',
-    rejected: 'Declined', expired: 'Expired', invoiced: 'Invoiced',
+    declined: 'Declined', expired: 'Expired', converted: 'Converted',
 }
 const statusColors: Record<string, string> = {
     draft:    'bg-gray-50 text-gray-600',
     sent:     'bg-electric-50 text-electric-700 ring-1 ring-electric-200',
     approved: 'bg-green-50 text-green-700',
-    rejected: 'bg-red-50 text-red-700',
+    declined: 'bg-red-50 text-red-700',
     expired:  'bg-orange-50 text-orange-700',
-    invoiced: 'bg-teal-50 text-teal-700',
+    converted: 'bg-teal-50 text-teal-700',
 }
 
 function isExpired(q: any) {
@@ -86,11 +101,25 @@ function isExpired(q: any) {
                 <!-- Line items -->
                 <div v-if="quote.items?.length" class="border-t border-gray-100 px-5 py-3">
                     <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-xs text-gray-500">
+                                <th class="text-left font-medium py-1.5">Description</th>
+                                <th class="text-right font-medium py-1.5">Qty</th>
+                                <th class="text-right font-medium py-1.5">Unit</th>
+                                <th class="text-right font-medium py-1.5">VAT</th>
+                                <th class="text-right font-medium py-1.5">Total</th>
+                            </tr>
+                        </thead>
                         <tbody class="divide-y divide-gray-50">
                             <tr v-for="item in quote.items" :key="item.id">
                                 <td class="py-1.5 text-gray-700">{{ item.description }}</td>
                                 <td class="py-1.5 text-right text-gray-500 text-xs">{{ item.quantity ?? 1 }}×</td>
-                                <td class="py-1.5 text-right font-medium text-gray-900 pl-4">{{ fmt(item.unit_price) }}</td>
+                                <td class="py-1.5 text-right text-gray-700">{{ fmt(item.unit_price) }}</td>
+                                <td class="py-1.5 text-right text-gray-500 text-xs">
+                                    <template v-if="item.tax_exempt">Exempt</template>
+                                    <template v-else>{{ item.vat_rate ?? quote.vat_rate }}% / {{ fmt(lineVat(item, quote)) }}</template>
+                                </td>
+                                <td class="py-1.5 text-right font-medium text-gray-900 pl-4">{{ fmt(lineGross(item, quote)) }}</td>
                             </tr>
                         </tbody>
                     </table>

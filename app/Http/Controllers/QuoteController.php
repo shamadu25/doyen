@@ -95,7 +95,7 @@ class QuoteController extends Controller
             'items.*.quantity'    => 'required|integer|min:1',
             'items.*.unit_price'  => 'required|numeric|min:0',
             'items.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
-            'items.*.tax_exempt'  => 'nullable|boolean',
+            'items.*.tax_exempt'  => 'required|boolean',
         ]);
 
         $defaultVatRate = (float) Setting::get('vat_rate', 20);
@@ -195,7 +195,7 @@ class QuoteController extends Controller
             'items.*.quantity'    => 'required_with:items|integer|min:1',
             'items.*.unit_price'  => 'required_with:items|numeric|min:0',
             'items.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
-            'items.*.tax_exempt'  => 'nullable|boolean',
+            'items.*.tax_exempt'  => 'required_with:items|boolean',
         ]);
 
         $defaultVatRate = (float) Setting::get('vat_rate', 20);

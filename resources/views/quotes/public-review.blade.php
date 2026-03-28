@@ -85,6 +85,11 @@
     </style>
 </head>
 <body>
+@php
+    $subtotal = (float) ($quote->subtotal ?? 0);
+    $discount = (float) ($quote->discount_amount ?? 0);
+    $discountRatio = $subtotal > 0 ? (1 - ($discount / $subtotal)) : 1;
+@endphp
 <div class="header">
     <h1>{{ config('app.garage_name', 'Doyen Auto Services') }}</h1>
     <p>VAT Quote &amp; Estimate Review</p>
@@ -187,7 +192,7 @@
                     @foreach ($quote->items as $item)
                     @php
                         $itemVatRate = $item->tax_exempt ? 0 : (float)($item->vat_rate ?? $quote->vat_rate ?? 20);
-                        $netPrice    = $item->total_price;
+                        $netPrice    = (float) $item->total_price * $discountRatio;
                         $vatAmt      = round($netPrice * $itemVatRate / 100, 2);
                         $gross       = $netPrice + $vatAmt;
                     @endphp
@@ -221,7 +226,7 @@
                     </tr>
                     @endif
                     <tr>
-                        <td colspan="4" style="text-align:right;color:#64748b;">VAT ({{ $quote->vat_rate }}%)</td>
+                        <td colspan="4" style="text-align:right;color:#64748b;">VAT</td>
                         <td>£{{ number_format($quote->vat_amount, 2) }}</td>
                     </tr>
                     <tr class="total-row">
@@ -231,6 +236,10 @@
                 </tfoot>
             </table>
         </div>
+    </div>
+
+    <div class="alert alert-warning">
+        Important: This is a quotation only and does not constitute a VAT invoice. A VAT invoice is issued after work completion.
     </div>
 
     @if($quote->notes)

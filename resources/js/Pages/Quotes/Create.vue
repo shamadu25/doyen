@@ -29,7 +29,7 @@ watch(() => form.value.customer_id, (id) => {
 })
 
 function addItem(type: string) {
-    form.value.items.push({ item_type: type, description: '', quantity: 1, unit_price: 0, service_id: null, part_id: null, vat_enabled: true })
+    form.value.items.push({ item_type: type, description: '', quantity: 1, unit_price: 0, service_id: null, part_id: null, tax_exempt: false })
 }
 
 function removeItem(i: number) {
@@ -50,9 +50,12 @@ const vatRate = computed(() => props.defaultVatRate ?? 20)
 const subtotal = computed(() => form.value.items.reduce((s, i) => s + (i.quantity * i.unit_price), 0))
 const discount = computed(() => subtotal.value * ((form.value.discount_percentage || 0) / 100))
 const discountFactor = computed(() => 1 - ((form.value.discount_percentage || 0) / 100))
+const lineNet = (item: any) => (Number(item.quantity) || 0) * (Number(item.unit_price) || 0)
+const lineVat = (item: any) => item.tax_exempt ? 0 : lineNet(item) * discountFactor.value * (vatRate.value / 100)
+const lineGross = (item: any) => (lineNet(item) * discountFactor.value) + lineVat(item)
 const vat = computed(() => form.value.items.reduce((s, i) => {
-    if (!i.vat_enabled) return s
-    return s + (i.quantity * i.unit_price) * discountFactor.value * (vatRate.value / 100)
+    if (i.tax_exempt) return s
+    return s + lineVat(i)
 }, 0))
 const total = computed(() => subtotal.value - discount.value + vat.value)
 
@@ -65,8 +68,8 @@ async function submit() {
         ...form.value,
         items: form.value.items.map((i: any) => ({
             ...i,
-            vat_rate: i.vat_enabled ? vatRate.value : 0,
-            tax_exempt: !i.vat_enabled,
+            vat_rate: i.tax_exempt ? 0 : vatRate.value,
+            tax_exempt: !!i.tax_exempt,
         }))
     }, {
         onError: (e) => { errors.value = e; submitting.value = false },
@@ -130,6 +133,7 @@ async function submit() {
                         <button type="button" @click="addItem('labour')" class="text-sm text-electric-600 hover:text-electric-700 font-medium">+ Add Item</button>
                     </div>
                     <p v-if="errors.items" class="text-red-500 text-xs mb-2">{{ errors.items }}</p>
+                    <p class="text-xs text-gray-500 mb-3">UK VAT display: unit prices are ex. VAT, VAT is shown per line, and line totals are inc. VAT.</p>
 
                     <!-- Column headers -->
                     <div class="grid grid-cols-12 gap-3 text-xs font-medium text-gray-500 mb-1 px-0.5">
@@ -137,7 +141,7 @@ async function submit() {
                         <div class="col-span-2">Type</div>
                         <div class="col-span-1">Qty</div>
                         <div class="col-span-2">Unit Price</div>
-                        <div class="col-span-2 text-center">VAT</div>
+                        <div class="col-span-2 text-center">VAT / Tax Status</div>
                         <div class="col-span-1"></div>
                     </div>
 
@@ -171,9 +175,15 @@ async function submit() {
                             <div class="col-span-2">
                                 <input v-model.number="item.unit_price" type="number" step="0.01" placeholder="£0.00" class="w-full rounded-lg border-gray-300 text-sm" />
                             </div>
-                            <div class="col-span-2 flex items-center justify-center gap-1.5">
-                                <input type="checkbox" v-model="item.vat_enabled" :id="`vat-${i}`" class="rounded border-gray-300 text-electric-600 focus:ring-electric-500" />
-                                <label :for="`vat-${i}`" class="text-xs cursor-pointer select-none" :class="item.vat_enabled ? 'text-gray-700 font-medium' : 'text-gray-400'">{{ item.vat_enabled ? vatRate + '%' : 'Exempt' }}</label>
+                            <div class="col-span-2">
+                                <label :for="`vat-${i}`" class="flex items-center justify-center gap-1.5 h-5">
+                                    <input type="checkbox" v-model="item.tax_exempt" :id="`vat-${i}`" class="rounded border-gray-300 text-electric-600 focus:ring-electric-500" />
+                                    <span class="text-xs cursor-pointer select-none" :class="item.tax_exempt ? 'text-amber-700 font-medium' : 'text-gray-600'">Tax Exempt</span>
+                                </label>
+                                <div class="text-[11px] text-center mt-1" :class="item.tax_exempt ? 'text-amber-700' : 'text-gray-500'">
+                                    {{ item.tax_exempt ? 'VAT £0.00' : `${vatRate}% · ${fmt(lineVat(item))}` }}
+                                </div>
+                                <div class="text-[11px] text-center text-gray-500">Line total {{ fmt(lineGross(item)) }}</div>
                             </div>
                             <div class="col-span-1 flex items-center justify-center">
                                 <button type="button" @click="removeItem(i)" class="text-red-400 hover:text-red-600">

@@ -368,6 +368,8 @@ class AppointmentController extends Controller
             'items.*.description'=> 'required|string|max:500',
             'items.*.quantity'   => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.vat_rate'   => 'nullable|numeric|min:0|max:100',
+            'items.*.tax_exempt' => 'required|boolean',
             'notes'              => 'nullable|string|max:2000',
             'validity_days'      => 'nullable|integer|min:1|max:365',
             'discount_percentage'=> 'nullable|numeric|min:0|max:100',
@@ -396,8 +398,8 @@ class AppointmentController extends Controller
         ]);
 
         foreach ($request->input('items') as $itemData) {
-            $itemVatRate = isset($itemData['vat_rate']) ? (float) $itemData['vat_rate'] : $vatRate;
-            $taxExempt   = isset($itemData['tax_exempt']) ? (bool) $itemData['tax_exempt'] : false;
+            $taxExempt   = (bool) $itemData['tax_exempt'];
+            $itemVatRate = $taxExempt ? 0 : (isset($itemData['vat_rate']) ? (float) $itemData['vat_rate'] : $vatRate);
             QuoteItem::create([
                 'quote_id'    => $quote->id,
                 'item_type'   => $itemData['item_type'],
@@ -431,4 +433,3 @@ class AppointmentController extends Controller
         return back()->with('success', "Quote {$quote->quote_number} sent to {$booking->customer->full_name} for review and approval.");
     }
 }
-

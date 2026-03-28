@@ -326,8 +326,9 @@ class CustomerPortalController extends Controller
 
         if ($quote->customer_id !== $customer->id) abort(403);
         if ($quote->status !== 'sent') return back()->withErrors(['error' => 'This quote is no longer available for approval.']);
+        if ($quote->isExpired()) return back()->withErrors(['error' => 'This quote has expired. Please contact us for a revised quote.']);
 
-        $quote->update(['status' => 'approved', 'approved_at' => now()]);
+        $quote->approve();
 
         return back()->with('success', 'Quote approved! We will be in touch to schedule the work.');
     }
@@ -341,8 +342,9 @@ class CustomerPortalController extends Controller
         $customer = Customer::findOrFail(session('customer_id'));
 
         if ($quote->customer_id !== $customer->id) abort(403);
+        if ($quote->status !== 'sent') return back()->withErrors(['error' => 'This quote is no longer available to decline.']);
 
-        $quote->update(['status' => 'rejected']);
+        $quote->decline();
 
         return back()->with('success', 'Quote declined. You can contact us if you have any questions.');
     }

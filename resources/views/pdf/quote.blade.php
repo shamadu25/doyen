@@ -76,6 +76,7 @@
     $vatAmount     = (float)($quote->vat_amount ?? 0);
     $totalAmount   = (float)($quote->total_amount ?? $subtotal + $vatAmount - $discount);
     $isExpired     = $quote->valid_until < \Carbon\Carbon::today();
+    $discountRatio = $subtotal > 0 ? (1 - ($discount / $subtotal)) : 1;
 
     // Build per-rate VAT summary groups
     $vatGroups = [];
@@ -94,7 +95,6 @@
             $desc = 'Standard Rate';
         }
         $key = $code . '_' . $rate;
-        $discountRatio = $subtotal > 0 ? (1 - ($discount / $subtotal)) : 1;
         $net   = (float)$item->total_price * $discountRatio;
         $iVat  = $item->tax_exempt ? 0 : round($net * ($rate / 100), 2);
         if (!isset($vatGroups[$key])) {
@@ -205,7 +205,7 @@
                 @if($isVatDoc)
                     <th class="r" style="width:8%">VAT %</th>
                 @endif
-                <th class="r" style="width:12%">Net</th>
+                <th class="r" style="width:12%">Net{{ $discount > 0 ? ' (after discount)' : '' }}</th>
                 @if($isVatDoc)
                     <th class="r" style="width:10%">VAT</th>
                 @endif
@@ -217,7 +217,7 @@
             @php
                 $qty    = (float)($item->quantity  ?? 1);
                 $unit   = (float)($item->unit_price ?? 0);
-                $net    = $qty * $unit;
+                $net    = ($qty * $unit) * $discountRatio;
                 $vr     = $item->tax_exempt ? 0 : (float)($item->vat_rate ?? $defaultVatRate);
                 $iVat   = $isVatDoc ? round($net * $vr / 100, 2) : 0;
                 $iTotal = $isVatDoc ? $net + $iVat : $net;

@@ -8,9 +8,22 @@ const props = defineProps<{ quote: any }>()
 const route = inject<(p: string) => string>('route', p => p)
 
 const q = computed(() => props.quote)
+const discountFactor = computed(() => {
+    const subtotal = parseFloat(String(q.value.subtotal || 0))
+    const discount = parseFloat(String(q.value.discount_amount || 0))
+    const discountedSubtotal = subtotal - discount
+    return subtotal > 0 ? (discountedSubtotal / subtotal) : 1
+})
 
 function fmt(v: any) { return '£' + parseFloat(v || 0).toFixed(2) }
 function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB') : '-' }
+function lineNet(item: any) { return (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) }
+function lineVat(item: any) {
+    if (item.tax_exempt) return 0
+    const itemVatRate = Number(item.vat_rate ?? q.value.vat_rate ?? 20)
+    return lineNet(item) * discountFactor.value * (itemVatRate / 100)
+}
+function lineGross(item: any) { return (lineNet(item) * discountFactor.value) + lineVat(item) }
 
 const statusColor: Record<string, string> = {
     draft: 'text-gray-600',
@@ -93,7 +106,8 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                             <th class="text-right px-4 py-2 font-medium text-gray-600">Qty</th>
                             <th class="text-right px-4 py-2 font-medium text-gray-600">Unit Price</th>
                             <th class="text-right px-4 py-2 font-medium text-gray-600">VAT</th>
-                            <th class="text-right px-4 py-2 font-medium text-gray-600">Subtotal (ex. VAT)</th>
+                            <th class="text-right px-4 py-2 font-medium text-gray-600">Net (ex. VAT)</th>
+                            <th class="text-right px-4 py-2 font-medium text-gray-600">Total (inc. VAT)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -106,9 +120,10 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                             <td class="px-4 py-3 text-right text-gray-700">{{ fmt(item.unit_price) }}</td>
                             <td class="px-4 py-3 text-right text-gray-500">
                                 <template v-if="item.tax_exempt"><span class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Exempt</span></template>
-                                <template v-else>{{ item.vat_rate ?? q.vat_rate }}% / {{ fmt(item.quantity * item.unit_price * ((item.vat_rate ?? q.vat_rate) / 100)) }}</template>
+                                <template v-else>{{ item.vat_rate ?? q.vat_rate }}% / {{ fmt(lineVat(item)) }}</template>
                             </td>
-                            <td class="px-4 py-3 text-right font-medium text-gray-900">{{ fmt(item.quantity * item.unit_price) }}</td>
+                            <td class="px-4 py-3 text-right font-medium text-gray-900">{{ fmt(lineNet(item)) }}</td>
+                            <td class="px-4 py-3 text-right font-medium text-gray-900">{{ fmt(lineGross(item)) }}</td>
                         </tr>
                     </tbody>
                 </table>

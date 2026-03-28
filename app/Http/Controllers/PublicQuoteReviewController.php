@@ -113,6 +113,12 @@ class PublicQuoteReviewController extends Controller
                 ->with('error', 'This quote cannot be declined at this stage.');
         }
 
+        if ($quote->isExpired()) {
+            $quote->update(['status' => 'expired']);
+            return redirect()->route('quote.review', $token)
+                ->with('error', 'This quote has expired. Please contact us for an updated quote.');
+        }
+
         $quote->decline();
 
         // If linked to an appointment, mark it as pending again (so staff can follow up)

@@ -52,17 +52,29 @@
     </div>
 
     {{-- Line items table --}}
+    @php
+        $subtotal = (float) ($quote->subtotal ?? 0);
+        $discount = (float) ($quote->discount_amount ?? 0);
+        $discountRatio = $subtotal > 0 ? (1 - ($discount / $subtotal)) : 1;
+    @endphp
     <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
         <thead>
             <tr style="background:#1e40af;color:#fff;">
                 <th style="padding:10px;text-align:left;">Description</th>
                 <th style="padding:10px;text-align:center;">Qty</th>
                 <th style="padding:10px;text-align:right;">Unit Price</th>
-                <th style="padding:10px;text-align:right;">Total</th>
+                <th style="padding:10px;text-align:right;">VAT</th>
+                <th style="padding:10px;text-align:right;">Total (inc. VAT)</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($quote->items as $i => $item)
+            @php
+                $net = (float) $item->total_price * $discountRatio;
+                $itemVatRate = $item->tax_exempt ? 0 : (float) ($item->vat_rate ?? $quote->vat_rate ?? 20);
+                $vat = round($net * ($itemVatRate / 100), 2);
+                $gross = $net + $vat;
+            @endphp
             <tr style="background:{{ $i % 2 === 0 ? '#f8fafc' : '#ffffff' }};border-bottom:1px solid #e5e7eb;">
                 <td style="padding:9px 10px;">
                     <span style="font-size:11px;color:#64748b;text-transform:uppercase;">{{ $item->item_type }}</span><br>
@@ -70,27 +82,34 @@
                 </td>
                 <td style="padding:9px 10px;text-align:center;">{{ $item->quantity }}</td>
                 <td style="padding:9px 10px;text-align:right;">£{{ number_format($item->unit_price, 2) }}</td>
-                <td style="padding:9px 10px;text-align:right;">£{{ number_format($item->total_price, 2) }}</td>
+                <td style="padding:9px 10px;text-align:right;">
+                    @if($item->tax_exempt)
+                        EXEMPT
+                    @else
+                        {{ number_format($itemVatRate, 0) }}% / £{{ number_format($vat, 2) }}
+                    @endif
+                </td>
+                <td style="padding:9px 10px;text-align:right;">£{{ number_format($gross, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
         <tfoot>
             @if ($quote->discount_amount > 0)
             <tr>
-                <td colspan="3" style="padding:8px 10px;text-align:right;color:#64748b;">Subtotal:</td>
+                <td colspan="4" style="padding:8px 10px;text-align:right;color:#64748b;">Subtotal:</td>
                 <td style="padding:8px 10px;text-align:right;">£{{ number_format($quote->subtotal, 2) }}</td>
             </tr>
             <tr>
-                <td colspan="3" style="padding:8px 10px;text-align:right;color:#dc2626;">Discount ({{ $quote->discount_percentage }}%):</td>
+                <td colspan="4" style="padding:8px 10px;text-align:right;color:#dc2626;">Discount ({{ $quote->discount_percentage }}%):</td>
                 <td style="padding:8px 10px;text-align:right;color:#dc2626;">−£{{ number_format($quote->discount_amount, 2) }}</td>
             </tr>
             @endif
             <tr>
-                <td colspan="3" style="padding:8px 10px;text-align:right;color:#64748b;">VAT ({{ $quote->vat_rate }}%):</td>
+                <td colspan="4" style="padding:8px 10px;text-align:right;color:#64748b;">VAT:</td>
                 <td style="padding:8px 10px;text-align:right;">£{{ number_format($quote->vat_amount, 2) }}</td>
             </tr>
             <tr style="background:#1e40af;color:#fff;font-weight:700;font-size:16px;">
-                <td colspan="3" style="padding:12px 10px;text-align:right;">Total:</td>
+                <td colspan="4" style="padding:12px 10px;text-align:right;">Total:</td>
                 <td style="padding:12px 10px;text-align:right;">£{{ number_format($quote->total_amount, 2) }}</td>
             </tr>
         </tfoot>
@@ -104,6 +123,9 @@
     @endif
 
     <div style="text-align:center;margin:30px 0;">
+        <p style="font-size:12px;color:#64748b;margin-bottom:10px;">
+            This is a quotation, not a VAT invoice. A VAT invoice will be issued once work is completed.
+        </p>
         <p style="color:#374151;margin-bottom:15px;">To review and respond to this quote, click the button below:</p>
         <a href="{{ $reviewUrl }}" class="button" style="background:#16a34a;padding:14px 40px;font-size:16px;">
             ✅ Review &amp; Approve Quote
