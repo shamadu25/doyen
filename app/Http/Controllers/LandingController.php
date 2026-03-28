@@ -54,9 +54,9 @@ class LandingController extends Controller
         ];
     }
 
-    public function index()
+    private function getWebsiteServices()
     {
-        $services = Service::websiteVisible()
+        return Service::websiteVisible()
             ->get()
             ->groupBy('category')
             ->map(function ($items) {
@@ -73,18 +73,49 @@ class LandingController extends Controller
                     ];
                 })->values();
             });
+    }
 
-        // Merge DB content with defaults
+    private function getWebsiteContent(): array
+    {
         $stored = WebsiteContent::getAllSections();
         $websiteContent = [];
         foreach ($this->contentDefaults() as $section => $defaults) {
             $websiteContent[$section] = array_merge($defaults, $stored[$section] ?? []);
         }
 
+        return $websiteContent;
+    }
+
+    public function index()
+    {
+        $services = $this->getWebsiteServices();
+        $websiteContent = $this->getWebsiteContent();
+
         return Inertia::render('Landing', [
             'websiteServices' => $services,
             'websiteContent'  => $websiteContent,
         ]);
     }
-}
 
+    public function servicesPage()
+    {
+        return Inertia::render('ServicesPublic', [
+            'websiteServices' => $this->getWebsiteServices(),
+            'websiteContent' => $this->getWebsiteContent(),
+        ]);
+    }
+
+    public function contactPage()
+    {
+        return Inertia::render('ContactPublic', [
+            'websiteContent' => $this->getWebsiteContent(),
+        ]);
+    }
+
+    public function testimonialsPage()
+    {
+        return Inertia::render('TestimonialsPublic', [
+            'websiteContent' => $this->getWebsiteContent(),
+        ]);
+    }
+}

@@ -470,10 +470,10 @@ const displayServiceCategories = computed(() => {
                         </div>
                     </div>
                     <div class="hidden md:flex items-center gap-8">
-                        <a href="#services" class="text-gray-700 hover:text-electric-600 font-medium transition">Services</a>
+                        <Link :href="route('/our-services')" class="text-gray-700 hover:text-electric-600 font-medium transition">Services</Link>
                         <Link :href="route('/about')" class="text-gray-700 hover:text-electric-600 font-medium transition">About</Link>
-                        <a href="#testimonials" class="text-gray-700 hover:text-electric-600 font-medium transition">Reviews</a>
-                        <a href="#contact" class="text-gray-700 hover:text-electric-600 font-medium transition">Contact</a>
+                        <Link :href="route('/testimonials')" class="text-gray-700 hover:text-electric-600 font-medium transition">Reviews</Link>
+                        <Link :href="route('/contact')" class="text-gray-700 hover:text-electric-600 font-medium transition">Contact</Link>
                         <Link :href="route('/customer/login')" class="inline-flex items-center px-4 py-2 border border-electric-600 text-electric-600 font-medium rounded-lg hover:bg-electric-50 transition text-sm">
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -1094,9 +1094,9 @@ const displayServiceCategories = computed(() => {
                     <div>
                         <h4 class="font-bold text-white mb-4 text-lg">Quick Links</h4>
                         <ul class="space-y-2">
-                            <li><a href="#services" class="hover:text-electric-400 transition">Our Services</a></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">Our Services</Link></li>
                             <li><Link :href="route('/about')" class="hover:text-electric-400 transition">About Us</Link></li>
-                            <li><a href="#testimonials" class="hover:text-electric-400 transition">Reviews</a></li>
+                            <li><Link :href="route('/testimonials')" class="hover:text-electric-400 transition">Reviews</Link></li>
                             <li><Link :href="route('/book-online?service=key-cutting-programming')" class="hover:text-electric-400 transition">Book Online</Link></li>
                         </ul>
                     </div>
@@ -1104,10 +1104,10 @@ const displayServiceCategories = computed(() => {
                     <div>
                         <h4 class="font-bold text-white mb-4 text-lg">Services</h4>
                         <ul class="space-y-2">
-                            <li><a href="#services" class="hover:text-electric-400 transition">MOT Testing</a></li>
-                            <li><a href="#services" class="hover:text-electric-400 transition">Car Servicing</a></li>
-                            <li><a href="#services" class="hover:text-electric-400 transition">Diagnostics</a></li>
-                            <li><a href="#services" class="hover:text-electric-400 transition">Repairs</a></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">MOT Testing</Link></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">Car Servicing</Link></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">Diagnostics</Link></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">Repairs</Link></li>
                         </ul>
                     </div>
                 </div>

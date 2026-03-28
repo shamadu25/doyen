@@ -196,10 +196,10 @@ const aboutSchema = computed(() => JSON.stringify({
                     </Link>
                     <div class="hidden md:flex items-center gap-8">
                         <Link :href="route('/')" class="text-gray-700 hover:text-electric-600 font-medium transition">Home</Link>
-                        <a :href="route('/') + '#services'" class="text-gray-700 hover:text-electric-600 font-medium transition">Services</a>
+                        <Link :href="route('/our-services')" class="text-gray-700 hover:text-electric-600 font-medium transition">Services</Link>
                         <Link :href="route('/about')" class="text-electric-600 font-semibold border-b-2 border-electric-600 pb-0.5">About</Link>
-                        <a :href="route('/') + '#testimonials'" class="text-gray-700 hover:text-electric-600 font-medium transition">Reviews</a>
-                        <a :href="route('/') + '#contact'" class="text-gray-700 hover:text-electric-600 font-medium transition">Contact</a>
+                        <Link :href="route('/testimonials')" class="text-gray-700 hover:text-electric-600 font-medium transition">Reviews</Link>
+                        <Link :href="route('/contact')" class="text-gray-700 hover:text-electric-600 font-medium transition">Contact</Link>
                         <Link :href="route('/customer/login')" class="inline-flex items-center px-4 py-2 border border-electric-600 text-electric-600 font-medium rounded-lg hover:bg-electric-50 transition text-sm">
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -388,7 +388,7 @@ const aboutSchema = computed(() => JSON.stringify({
                     </div>
                 </div>
                 <div class="text-center">
-                    <Link :href="route('/') + '#services'" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-electric-600 to-electric-700 text-white font-bold rounded-xl hover:shadow-xl transform hover:scale-105 transition-all">
+                    <Link :href="route('/our-services')" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-electric-600 to-electric-700 text-white font-bold rounded-xl hover:shadow-xl transform hover:scale-105 transition-all">
                         View All Services
                         <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -509,7 +509,7 @@ const aboutSchema = computed(() => JSON.stringify({
                         <ul class="space-y-2">
                             <li><Link :href="route('/')" class="hover:text-electric-400 transition">Home</Link></li>
                             <li><Link :href="route('/about')" class="hover:text-electric-400 transition">About Us</Link></li>
-                            <li><a :href="route('/') + '#services'" class="hover:text-electric-400 transition">Our Services</a></li>
+                            <li><Link :href="route('/our-services')" class="hover:text-electric-400 transition">Our Services</Link></li>
                             <li><Link :href="route('/book-online')" class="hover:text-electric-400 transition">Book Online</Link></li>
                         </ul>
                     </div>

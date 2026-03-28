@@ -41,6 +41,9 @@ Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // About Us Page
 Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::get('/our-services', [LandingController::class, 'servicesPage'])->name('public.services');
+Route::get('/contact', [LandingController::class, 'contactPage'])->name('public.contact');
+Route::get('/testimonials', [LandingController::class, 'testimonialsPage'])->name('public.testimonials');
 
 // Public Booking (No authentication required)
 Route::get('/book-online', [PublicBookingController::class, 'create'])->name('public.booking.create');
