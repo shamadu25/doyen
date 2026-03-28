@@ -149,9 +149,14 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
     <Head title="Settings" />
     <AuthenticatedLayout>
         <div class="max-w-3xl mx-auto space-y-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
-                <p class="mt-1 text-sm text-gray-500">Configure your garage system</p>
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+                    <p class="mt-1 text-sm text-gray-500">Configure your garage system</p>
+                </div>
+                <a :href="route('/settings/sms-test')" class="px-4 py-2 border border-electric-300 text-electric-700 rounded-lg hover:bg-electric-50 text-sm font-medium whitespace-nowrap">
+                    SMS Test Page
+                </a>
             </div>
 
             <!-- Flash messages -->

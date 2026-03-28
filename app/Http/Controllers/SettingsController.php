@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -69,6 +70,41 @@ class SettingsController extends Controller
             'bookingHours'  => $bookingHours,
             'closedDates'   => array_values($closedDates),
         ]);
+    }
+
+    public function smsTest()
+    {
+        $twilioSid = (string) config('services.twilio.sid');
+
+        return Inertia::render('Settings/SmsTest', [
+            'smsConfig' => [
+                'enabled' => (bool) config('services.sms.enabled'),
+                'twilio_sid_configured' => !empty(config('services.twilio.sid')),
+                'twilio_token_configured' => !empty(config('services.twilio.token')),
+                'twilio_from' => (string) (config('services.twilio.from') ?? ''),
+                'twilio_sid_preview' => $twilioSid ? ('***' . substr($twilioSid, -6)) : '',
+            ],
+        ]);
+    }
+
+    public function sendTestSms(Request $request, SmsService $smsService)
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string|max:30',
+            'message' => 'required|string|max:480',
+        ]);
+
+        if (!$smsService->isEnabled()) {
+            return back()->with('error', 'SMS is not enabled/configured. Check SMS_ENABLED, TWILIO_SID and TWILIO_TOKEN in .env.');
+        }
+
+        $sent = $smsService->send($validated['phone'], $validated['message']);
+
+        if (!$sent) {
+            return back()->with('error', 'SMS send failed. Check logs and your Twilio credentials/network connectivity.');
+        }
+
+        return back()->with('success', 'Test SMS sent successfully.');
     }
 
     public function update(Request $request)

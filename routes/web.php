@@ -144,6 +144,8 @@ Route::middleware(['auth'])->group(function () {
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/settings/sms-test', [SettingsController::class, 'smsTest'])->name('settings.sms-test');
+    Route::post('/settings/sms-test', [SettingsController::class, 'sendTestSms'])->name('settings.sms-test.send');
     Route::post('/settings/booking-availability', [SettingsController::class, 'updateAvailability'])->name('settings.availability.update');
     Route::post('/settings/closed-dates/add', [SettingsController::class, 'addClosedDate'])->name('settings.closed-dates.add');
     Route::post('/settings/closed-dates/remove', [SettingsController::class, 'removeClosedDate'])->name('settings.closed-dates.remove');
