@@ -14,10 +14,10 @@ class SmsService
 
     public function __construct()
     {
-        $this->twilioSid = env('TWILIO_SID');
-        $this->twilioToken = env('TWILIO_TOKEN');
-        $this->twilioFrom = env('TWILIO_FROM');
-        $this->enabled = env('SMS_ENABLED', false);
+        $this->twilioSid = (string) config('services.twilio.sid');
+        $this->twilioToken = (string) config('services.twilio.token');
+        $this->twilioFrom = (string) config('services.twilio.from');
+        $this->enabled = filter_var(config('services.sms.enabled', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
