@@ -355,19 +355,27 @@ class SmsService
      */
     protected function formatPhoneNumber($phone)
     {
-        // Remove all non-numeric characters
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        
-        // If it starts with 0, replace with +44 (UK)
-        if (substr($phone, 0, 1) === '0') {
-            $phone = '+44' . substr($phone, 1);
+        $raw = trim((string) $phone);
+
+        // Keep a leading "+" if provided and strip separators/spaces.
+        if (str_starts_with($raw, '+')) {
+            return '+' . preg_replace('/\D+/', '', substr($raw, 1));
         }
-        
-        // If it doesn't start with +, assume UK and add +44
-        if (substr($phone, 0, 1) !== '+') {
-            $phone = '+44' . $phone;
+
+        // Digits-only normalisation for local numbers.
+        $digits = preg_replace('/\D+/', '', $raw);
+
+        // UK local mobile/landline starting with 0 => convert to +44 format.
+        if (str_starts_with($digits, '0')) {
+            return '+44' . substr($digits, 1);
         }
-        
-        return $phone;
+
+        // If already starts with country code 44 (without +), just add +.
+        if (str_starts_with($digits, '44')) {
+            return '+' . $digits;
+        }
+
+        // Fallback: assume UK.
+        return '+44' . $digits;
     }
 }
