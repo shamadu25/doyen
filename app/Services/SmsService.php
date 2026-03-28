@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Exception;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SmsService
 {
@@ -35,7 +35,7 @@ class SmsService
         }
 
         if (!$this->twilioSid || !$this->twilioToken || !$this->twilioFrom) {
-            Log::error('Twilio credentials not configured');
+            Log::warning('SMS not sent: Twilio credentials are not fully configured');
             return false;
         }
 
@@ -53,8 +53,12 @@ class SmsService
             Log::info('SMS sent successfully to: ' . $to);
             return true;
 
-        } catch (Exception $e) {
-            Log::error('Failed to send SMS: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            // Network/provider outages are operational warnings, not application crashes.
+            Log::warning('Failed to send SMS', [
+                'reason' => $e->getMessage(),
+                'to' => $to,
+            ]);
             return false;
         }
     }

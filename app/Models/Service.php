@@ -38,6 +38,17 @@ class Service extends Model
         'show_on_website' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Service $service) {
+            // Keep required numeric columns non-null in all write paths.
+            $service->cost_price = $service->cost_price ?? 0;
+            $service->estimated_duration_minutes = $service->estimated_duration_minutes ?? 60;
+            $service->vat_rate = $service->vat_rate ?? 20;
+            $service->sort_order = $service->sort_order ?? 0;
+        });
+    }
+
     /**
      * Scope: only services that are active, approved, and visible on website
      */

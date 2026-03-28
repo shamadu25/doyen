@@ -90,6 +90,8 @@ class ServiceController extends Controller
         $validated['requires_booking']= $request->boolean('requires_booking');
         $validated['is_approved']     = $request->boolean('is_approved');
         $validated['show_on_website'] = $request->boolean('show_on_website');
+        $validated['cost_price']      = $validated['cost_price'] ?? 0.00;
+        $validated['estimated_duration_minutes'] = $validated['estimated_duration_minutes'] ?? 60;
         $validated['vat_rate']        = $validated['vat_rate'] ?? 20.00;
         $validated['sort_order']      = $validated['sort_order'] ?? 0;
 
@@ -157,6 +159,10 @@ class ServiceController extends Controller
         $validated['requires_booking']= $request->boolean('requires_booking');
         $validated['is_approved']     = $request->boolean('is_approved');
         $validated['show_on_website'] = $request->boolean('show_on_website');
+        $validated['cost_price']      = $validated['cost_price'] ?? 0.00;
+        $validated['estimated_duration_minutes'] = $validated['estimated_duration_minutes'] ?? 60;
+        $validated['vat_rate']        = $validated['vat_rate'] ?? 20.00;
+        $validated['sort_order']      = $validated['sort_order'] ?? 0;
 
         $service->update($validated);
 
@@ -298,4 +304,3 @@ class ServiceController extends Controller
         ]);
     }
 }
-
