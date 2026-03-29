@@ -1,6 +1,6 @@
 @extends('emails.layout')
 
-@section('title', 'Your Quote ' . $quote->quote_number . ' — Review & Approve')
+@section('title', 'Your Quote ' . $quote->quote_number . ' — View Online')
 
 @section('content')
     <div class="greeting">
@@ -10,7 +10,7 @@
     <p>
         Thank you for choosing <strong>{{ config('app.garage_name', 'Doyen Auto Services') }}</strong>!
         We have prepared a quote for the work requested on your vehicle.
-        Please review the details below and click the button to approve or decline.
+        Please review the details below online. From the quote page, you can approve it, download it, or request an amendment.
     </p>
 
     @if($quote->appointment)
@@ -126,9 +126,9 @@
         <p style="font-size:12px;color:#64748b;margin-bottom:10px;">
             This is a quotation, not a VAT invoice. A VAT invoice will be issued once work is completed.
         </p>
-        <p style="color:#374151;margin-bottom:15px;">To review and respond to this quote, click the button below:</p>
+        <p style="color:#374151;margin-bottom:15px;">To view your quote online, click the button below:</p>
         <a href="{{ $reviewUrl }}" class="button" style="background:#16a34a;padding:14px 40px;font-size:16px;">
-            ✅ Review &amp; Approve Quote
+            View Quote
         </a>
         <p style="font-size:13px;color:#64748b;margin-top:12px;">
             This link is unique to you. Do not share it.<br>

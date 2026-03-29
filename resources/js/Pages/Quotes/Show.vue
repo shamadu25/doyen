@@ -63,6 +63,9 @@ function deleteQuote() { if (confirm('Delete this quote?')) router.delete(route(
                     <button v-if="q.status === 'sent'" @click="approveQuote" class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">Approve</button>
                     <button v-if="q.status === 'sent'" @click="declineQuote" class="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Decline</button>
                     <button v-if="q.status === 'approved'" @click="convertQuote" class="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">Convert to Job Card</button>
+                    <Link v-if="q.status === 'converted' && q.converted_to_job_card_id" :href="route(`/job-cards/${q.converted_to_job_card_id}`)" class="px-3 py-1.5 text-sm bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200">
+                        Open Job Card
+                    </Link>
                     <a :href="route(`/quotes/${q.id}/download`)" target="_blank" class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-1">⬇ Download PDF</a>
                     <Link v-if="!['approved','converted'].includes(q.status)" :href="route(`/quotes/${q.id}/edit`)" class="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Edit</Link>
                     <button v-if="q.status !== 'converted'" @click="deleteQuote" class="px-3 py-1.5 text-sm text-red-600 hover:text-red-800">Delete</button>

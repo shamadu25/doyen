@@ -21,6 +21,9 @@ function jobTotal(job: any) {
     const p = (job.parts    || []).reduce((sum: number, pt: any) => sum + partTotal(pt),    0)
     return s + p
 }
+function workSummary(job: any) {
+    return job.work_completed || job.work_required || job.customer_complaint || job.technician_notes || ''
+}
 </script>
 
 <template>
@@ -43,8 +46,11 @@ function jobTotal(job: any) {
                     <div class="min-w-0">
                         <p class="font-semibold text-gray-900">{{ job.job_number }}</p>
                         <p class="text-sm text-gray-500 mt-0.5 truncate">
-                            {{ fmtDate(job.created_at) }}
+                            {{ fmtDate(job.completion_date || job.date_out || job.date_in || job.created_at) }}
                             <template v-if="job.vehicle"> · {{ job.vehicle.registration_number }} – {{ job.vehicle.make }} {{ job.vehicle.model }}</template>
+                        </p>
+                        <p v-if="workSummary(job)" class="mt-1 text-sm font-medium text-gray-700 truncate">
+                            {{ workSummary(job) }}
                         </p>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
@@ -66,20 +72,25 @@ function jobTotal(job: any) {
                 <div v-if="openJob === job.id" class="border-t border-gray-100 px-5 py-4 space-y-4">
 
                     <!-- Description / complaint -->
-                    <div v-if="job.description || job.customer_complaint">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Complaint / Description</p>
-                        <p class="text-sm text-gray-700">{{ job.customer_complaint || job.description }}</p>
+                    <div v-if="job.customer_complaint">
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Reported Issue</p>
+                        <p class="text-sm text-gray-700">{{ job.customer_complaint }}</p>
                     </div>
 
-                    <!-- Work done / diagnosis -->
-                    <div v-if="job.work_performed || job.diagnosis">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Work Performed</p>
-                        <p class="text-sm text-gray-700">{{ job.work_performed || job.diagnosis }}</p>
+                    <div v-if="job.work_required" class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                        <p class="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-1">Work Requested</p>
+                        <p class="text-sm text-blue-900">{{ job.work_required }}</p>
+                    </div>
+
+                    <!-- Work done -->
+                    <div v-if="job.work_completed || job.technician_notes" class="rounded-xl border border-green-100 bg-green-50 p-4">
+                        <p class="text-xs font-semibold text-green-800 uppercase tracking-wider mb-1">Work Completed</p>
+                        <p class="text-sm text-green-900">{{ job.work_completed || job.technician_notes }}</p>
                     </div>
 
                     <!-- Labour / services -->
                     <div v-if="job.services?.length">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Labour</p>
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Services Carried Out</p>
                         <div class="space-y-1.5">
                             <div v-for="s in job.services" :key="s.id"
                                 class="flex items-center justify-between text-sm gap-2">
@@ -96,7 +107,7 @@ function jobTotal(job: any) {
                             <div v-for="p in job.parts" :key="p.id"
                                 class="flex items-center justify-between text-sm gap-2">
                                 <span class="text-gray-700">
-                                    {{ p.description || p.part?.name || 'Part' }}
+                                    {{ p.description || p.part_name || p.part?.name || 'Part' }}
                                     <span v-if="p.quantity > 1" class="text-gray-400"> × {{ p.quantity }}</span>
                                 </span>
                                 <span class="text-gray-900 font-medium flex-shrink-0">{{ fmt(partTotal(p)) }}</span>
@@ -111,10 +122,27 @@ function jobTotal(job: any) {
                         <span class="text-base font-bold text-gray-900">{{ fmt(jobTotal(job)) }}</span>
                     </div>
 
-                    <!-- Technician notes (if exists and not sensitive) -->
-                    <div v-if="job.technician_notes">
+                    <!-- Technician notes -->
+                    <div v-if="job.technician_notes && job.work_completed !== job.technician_notes">
                         <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Technician Notes</p>
                         <p class="text-sm text-gray-700">{{ job.technician_notes }}</p>
+                    </div>
+
+                    <div v-if="job.documents?.length || job.invoice" class="space-y-3">
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Downloads</p>
+
+                        <a v-if="job.invoice"
+                            :href="`/customer/invoices/${job.invoice.id}/download`"
+                            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Download Invoice
+                        </a>
+
+                        <div v-if="job.documents?.length" class="flex flex-wrap gap-2">
+                            <a v-for="doc in job.documents" :key="doc.id" :href="doc.download_url"
+                                class="inline-flex items-center rounded-lg border border-electric-200 bg-electric-50 px-3 py-2 text-sm font-medium text-electric-800 hover:bg-electric-100">
+                                Download {{ doc.title || doc.file_name }}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

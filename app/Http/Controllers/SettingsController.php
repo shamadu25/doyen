@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\SmsLog;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class SettingsController extends Controller
@@ -23,6 +25,40 @@ class SettingsController extends Controller
     public function index()
     {
         $settings = Setting::getAllSettings();
+        $smsTemplates = SmsService::editableTemplates();
+        $smsLogs = collect();
+        $smsStats = [
+            'total' => 0,
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => 0,
+        ];
+
+        if (Schema::hasTable('sms_logs')) {
+            $smsLogs = SmsLog::query()
+                ->latest()
+                ->limit(100)
+                ->get()
+                ->map(fn (SmsLog $log) => [
+                    'id' => $log->id,
+                    'template_key' => $log->template_key,
+                    'audience' => $log->audience,
+                    'recipient' => $log->recipient,
+                    'message' => $log->message,
+                    'status' => $log->status,
+                    'error_message' => $log->error_message,
+                    'provider' => $log->provider,
+                    'created_at' => optional($log->created_at)->toIso8601String(),
+                    'sent_at' => optional($log->sent_at)->toIso8601String(),
+                ]);
+
+            $smsStats = [
+                'total' => SmsLog::count(),
+                'sent' => SmsLog::where('status', 'sent')->count(),
+                'failed' => SmsLog::where('status', 'failed')->count(),
+                'skipped' => SmsLog::where('status', 'skipped')->count(),
+            ];
+        }
 
         $bookingHours = isset($settings['booking_hours'])
             ? json_decode($settings['booking_hours'], true)
@@ -65,20 +101,32 @@ class SettingsController extends Controller
                 'invoice_header_email'    => $settings['invoice_header_email']    ?? '',
                 'invoice_header_website'  => $settings['invoice_header_website']  ?? '',
                 'sms_enabled'             => $settings['sms_enabled'] ?? '0',
+                'sms_admin_phone'         => $settings['sms_admin_phone'] ?? env('ADMIN_PHONE', env('GARAGE_PHONE', '')),
                 'email_notifications'   => $settings['email_notifications'] ?? '1',
             ],
             'bookingHours'  => $bookingHours,
             'closedDates'   => array_values($closedDates),
+            'smsTemplates' => $smsTemplates,
+            'smsLogs' => $smsLogs,
+            'smsStats' => $smsStats,
+            'smsConfig' => [
+                'enabled' => filter_var($settings['sms_enabled'] ?? config('services.sms.enabled', false), FILTER_VALIDATE_BOOLEAN),
+                'admin_phone' => $settings['sms_admin_phone'] ?? env('ADMIN_PHONE', env('GARAGE_PHONE', '')),
+                'twilio_sid_configured' => !empty(config('services.twilio.sid')),
+                'twilio_token_configured' => !empty(config('services.twilio.token')),
+                'twilio_from' => (string) (config('services.twilio.from') ?? ''),
+            ],
         ]);
     }
 
     public function smsTest()
     {
         $twilioSid = (string) config('services.twilio.sid');
+        $smsEnabled = filter_var(Setting::get('sms_enabled', config('services.sms.enabled', false)), FILTER_VALIDATE_BOOLEAN);
 
         return Inertia::render('Settings/SmsTest', [
             'smsConfig' => [
-                'enabled' => (bool) config('services.sms.enabled'),
+                'enabled' => $smsEnabled,
                 'twilio_sid_configured' => !empty(config('services.twilio.sid')),
                 'twilio_token_configured' => !empty(config('services.twilio.token')),
                 'twilio_from' => (string) (config('services.twilio.from') ?? ''),
@@ -140,6 +188,9 @@ class SettingsController extends Controller
             'invoice_header_email'     => 'nullable|email|max:255',
             'invoice_header_website'   => 'nullable|string|max:255',
             'sms_enabled'              => 'nullable',
+            'sms_admin_phone'          => 'nullable|string|max:30',
+            'sms_templates'            => 'nullable|array',
+            'sms_templates.*'          => 'nullable|string|max:1200',
             'email_notifications'      => 'nullable',
         ]);
 
@@ -154,8 +205,22 @@ class SettingsController extends Controller
         ];
 
         foreach ($validated as $key => $value) {
+            if ($key === 'sms_templates') {
+                continue;
+            }
+
             $storageKey = $keyMap[$key] ?? $key;
-            Setting::set($storageKey, $value ?? '', 'garage');
+            $group = str_starts_with($storageKey, 'sms_') ? 'sms' : 'garage';
+            Setting::set($storageKey, $value ?? '', $group);
+        }
+
+        $allowedTemplateKeys = array_keys(SmsService::templateDefinitions());
+        foreach (($validated['sms_templates'] ?? []) as $templateKey => $content) {
+            if (!in_array($templateKey, $allowedTemplateKeys, true)) {
+                continue;
+            }
+
+            Setting::set(SmsService::templateSettingKey($templateKey), $content ?? '', 'sms');
         }
 
         if ($request->hasFile('logo')) {

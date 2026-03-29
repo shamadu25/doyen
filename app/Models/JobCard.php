@@ -120,6 +120,11 @@ class JobCard extends Model
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    public function sourceQuote()
+    {
+        return $this->hasOne(Quote::class, 'converted_to_job_card_id');
+    }
+
     public function getTotalCostAttribute()
     {
         $servicesTotal = $this->services->sum(function ($service) {

@@ -315,6 +315,11 @@ class QuoteController extends Controller
      */
     public function convert(Quote $quote)
     {
+        if ($quote->status === 'converted' && $quote->converted_to_job_card_id) {
+            return redirect()->route('job-cards.show', $quote->converted_to_job_card_id)
+                ->with('success', "Quote {$quote->quote_number} has already been converted.");
+        }
+
         if ($quote->status !== 'approved') {
             $quote->approve();
         }

@@ -111,9 +111,6 @@
                     @if(!empty($hdrWebsite))
                         <span>{{ $hdrWebsite }}</span>
                     @endif
-                    @if($isVatDoc)
-                        <span style="margin-top:4px;font-weight:600;color:#1e3a8a;">VAT Reg No: {{ $vatNumber }}</span>
-                    @endif
                     @if(!empty($companyNumber))
                         <span>Company No: {{ $companyNumber }}</span>
                     @endif
@@ -387,30 +384,7 @@
 
     {{-- FOOTER --}}
     <div class="footer">
-        <strong>{{ $hdrName }}</strong><br>
-        @php
-            $footerCityLine = trim($hdrCity . ' ' . $hdrPostcode);
-            $footerAddrFull = $hdrAddress . (!empty($footerCityLine) ? ', ' . $footerCityLine : '');
-        @endphp
-        @if(!empty($hdrAddress))
-            {{ $footerAddrFull }}<br>
-        @endif
-        @if(!empty($hdrPhone))
-            Tel: {{ $hdrPhone }}
-        @endif
-        @if(!empty($hdrEmail))
-            &bull; {{ $hdrEmail }}
-        @endif
-        @if(!empty($hdrWebsite))
-            &bull; {{ $hdrWebsite }}
-        @endif
-        @if($isVatDoc)
-            <br>VAT Registration No: {{ $vatNumber }}
-        @endif
-        @if(!empty($companyNumber))
-            &bull; Registered in England &amp; Wales No: {{ $companyNumber }}
-        @endif
-        <br><br>{{ $footerNote }}
+        Thanks for Patronizing Doyen Auto Services Ltd
     </div>
 
 </div>

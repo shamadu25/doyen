@@ -71,7 +71,7 @@ class JobCardController extends Controller
         $jobCard->load([
             'customer', 'vehicle', 'assignedTo', 'appointment',
             'services.service', 'parts.part', 'invoice',
-            'documents.uploader',
+            'documents.uploader', 'sourceQuote',
         ]);
 
         $labourTotal = $jobCard->services->sum(fn($s) => ($s->unit_price * $s->quantity) - ($s->discount ?? 0));

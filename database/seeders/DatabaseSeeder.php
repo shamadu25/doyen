@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
             'invoice_terms' => 'Payment due within 30 days of invoice date.',
             'mot_station_number' => '',
             'sms_enabled' => '0',
+            'sms_admin_phone' => '',
             'email_notifications' => '1',
         ];
 

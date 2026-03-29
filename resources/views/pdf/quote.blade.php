@@ -113,11 +113,21 @@
             <td style="width:55%">
                 <div class="company-name">{{ $hdrName }}</div>
                 <div class="company-meta">
-                    @if(!empty($hdrAddress))<span>{{ $hdrAddress }}</span>@endif
-                    @if(!empty($hdrCity) || !empty($hdrPostcode))<span>{{ trim($hdrCity.' '.$hdrPostcode) }}</span>@endif
-                    @if(!empty($hdrPhone))<span>Tel: {{ $hdrPhone }}</span>@endif
-                    @if(!empty($hdrEmail))<span>{{ $hdrEmail }}</span>@endif
-                    @if(!empty($hdrWebsite))<span>{{ $hdrWebsite }}</span>@endif
+                    @if(!empty($hdrAddress))
+                        <span>{{ $hdrAddress }}</span>
+                    @endif
+                    @if(!empty($hdrCity) || !empty($hdrPostcode))
+                        <span>{{ trim($hdrCity.' '.$hdrPostcode) }}</span>
+                    @endif
+                    @if(!empty($hdrPhone))
+                        <span>Tel: {{ $hdrPhone }}</span>
+                    @endif
+                    @if(!empty($hdrEmail))
+                        <span>{{ $hdrEmail }}</span>
+                    @endif
+                    @if(!empty($hdrWebsite))
+                        <span>{{ $hdrWebsite }}</span>
+                    @endif
                     @if($isVatDoc)
                         <span style="margin-top:4px;font-weight:600;color:#1e3a8a;">VAT Reg No: {{ $vatNumber }}</span>
                     @endif
@@ -164,11 +174,19 @@
                     <div class="address-label">Quote Prepared For</div>
                     <div class="address-name">{{ ($quote->customer->first_name ?? '').' '.($quote->customer->last_name ?? '') }}</div>
                     <div class="address-detail">
-                        @if(!empty($quote->customer->address)){{ $quote->customer->address }}<br>@endif
+                        @if(!empty($quote->customer->address))
+                            {{ $quote->customer->address }}<br>
+                        @endif
                         @php $cLine = trim(($quote->customer->city ?? '').' '.($quote->customer->postcode ?? '')); @endphp
-                        @if(!empty($cLine)){{ $cLine }}<br>@endif
-                        @if(!empty($quote->customer->email)){{ $quote->customer->email }}<br>@endif
-                        @if(!empty($quote->customer->phone)){{ $quote->customer->phone }}@endif
+                        @if(!empty($cLine))
+                            {{ $cLine }}<br>
+                        @endif
+                        @if(!empty($quote->customer->email))
+                            {{ $quote->customer->email }}<br>
+                        @endif
+                        @if(!empty($quote->customer->phone))
+                            {{ $quote->customer->phone }}
+                        @endif
                     </div>
                 </div>
             </td>
@@ -179,9 +197,15 @@
                     <div class="address-name" style="font-size:14px;letter-spacing:1px;">{{ $quote->vehicle->registration_number }}</div>
                     <div class="address-detail">
                         {{ $quote->vehicle->make }} {{ $quote->vehicle->model }}
-                        @if(!empty($quote->vehicle->year)) &bull; {{ $quote->vehicle->year }}@endif
-                        @if(!empty($quote->vehicle->fuel_type)) &bull; {{ ucfirst($quote->vehicle->fuel_type) }}@endif
-                        @if(!empty($quote->vehicle->mileage))<br>Mileage: {{ number_format($quote->vehicle->mileage) }} miles@endif
+                        @if(!empty($quote->vehicle->year))
+                            &bull; {{ $quote->vehicle->year }}
+                        @endif
+                        @if(!empty($quote->vehicle->fuel_type))
+                            &bull; {{ ucfirst($quote->vehicle->fuel_type) }}
+                        @endif
+                        @if(!empty($quote->vehicle->mileage))
+                            <br>Mileage: {{ number_format($quote->vehicle->mileage) }} miles
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -332,8 +356,12 @@
     {{-- FOOTER --}}
     <div class="footer">
         <strong>{{ $hdrName }}</strong>
-        @if(!empty($vatNumber)) &bull; <strong>VAT No:</strong> {{ $vatNumber }}@endif
-        @if(!empty($companyNumber)) &bull; <strong>Co No:</strong> {{ $companyNumber }}@endif
+        @if(!empty($vatNumber))
+            &bull; <strong>VAT No:</strong> {{ $vatNumber }}
+        @endif
+        @if(!empty($companyNumber))
+            &bull; <strong>Co No:</strong> {{ $companyNumber }}
+        @endif
         <br>
         {{ $footerNote }}<br>
         This quotation is not a VAT invoice. A formal VAT invoice will be issued on completion of work.

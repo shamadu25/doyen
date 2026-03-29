@@ -30,6 +30,12 @@
             <span class="info-label">Vehicle:</span>
             <span class="info-value">{{ $vehicle->make }} {{ $vehicle->model }} - {{ strtoupper($vehicle->registration_number) }}</span>
         </div>
+        @if($appointment->cancellation_reason)
+        <div class="info-row">
+            <span class="info-label">Cancellation Reason:</span>
+            <span class="info-value">{{ $appointment->cancellation_reason }}</span>
+        </div>
+        @endif
     </div>
 
     <p>

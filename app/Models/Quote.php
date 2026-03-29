@@ -194,6 +194,13 @@ class Quote extends Model
      */
     public function convertToJobCard()
     {
+        if ($this->converted_to_job_card_id) {
+            $existingJobCard = JobCard::find($this->converted_to_job_card_id);
+            if ($existingJobCard) {
+                return $existingJobCard;
+            }
+        }
+
         if ($this->status !== 'approved') {
             return null;
         }
@@ -201,28 +208,52 @@ class Quote extends Model
         $jobCard = JobCard::create([
             'customer_id' => $this->customer_id,
             'vehicle_id' => $this->vehicle_id,
+            'appointment_id' => $this->appointment_id,
             'date_in' => Carbon::today(),
             'status' => 'open',
             'priority' => 'normal',
-            'description' => $this->description,
-            'notes' => "Converted from Quote: {$this->quote_number}\n" . $this->notes,
+            'customer_complaint' => $this->description,
+            'work_required' => trim(collect([
+                "Converted from Quote: {$this->quote_number}",
+                $this->notes,
+            ])->filter()->implode("\n\n")),
         ]);
 
         // Copy items to job card
         foreach ($this->items as $item) {
-            if ($item->item_type === 'service' && $item->service_id) {
+            if (in_array($item->item_type, ['service', 'labour'], true)) {
                 $jobCard->services()->create([
                     'service_id' => $item->service_id,
+                    'description' => $item->description,
                     'quantity' => $item->quantity,
-                    'price' => $item->unit_price,
-                    'cost' => 0,
+                    'unit_price' => $item->unit_price,
+                    'discount' => 0,
+                    'vat_rate' => $item->tax_exempt ? 0 : ($item->vat_rate ?? $this->vat_rate ?? 20),
+                    'notes' => $item->item_type === 'labour' ? 'Converted from quote labour line.' : null,
                 ]);
             } elseif ($item->item_type === 'part' && $item->part_id) {
                 $jobCard->parts()->create([
                     'part_id' => $item->part_id,
+                    'part_name' => $item->description ?: ($item->part?->name ?? 'Part'),
                     'quantity' => $item->quantity,
-                    'cost_price' => 0,
-                    'selling_price' => $item->unit_price,
+                    'unit_cost' => 0,
+                    'unit_price' => $item->unit_price,
+                    'discount' => 0,
+                    'vat_rate' => $item->tax_exempt ? 0 : ($item->vat_rate ?? $this->vat_rate ?? 20),
+                    'status' => 'pending',
+                    'notes' => 'Converted from quote part line.',
+                ]);
+            } elseif ($item->item_type === 'part') {
+                $jobCard->parts()->create([
+                    'part_id' => null,
+                    'part_name' => $item->description ?: 'Part',
+                    'quantity' => $item->quantity,
+                    'unit_cost' => 0,
+                    'unit_price' => $item->unit_price,
+                    'discount' => 0,
+                    'vat_rate' => $item->tax_exempt ? 0 : ($item->vat_rate ?? $this->vat_rate ?? 20),
+                    'status' => 'pending',
+                    'notes' => 'Converted from quote part line.',
                 ]);
             }
         }

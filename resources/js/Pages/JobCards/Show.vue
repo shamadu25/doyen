@@ -171,6 +171,19 @@ function humanSize(bytes: number): string {
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Main Content -->
                 <div class="lg:col-span-2 space-y-6">
+                    <div v-if="job.source_quote" class="rounded-xl border border-purple-200 bg-purple-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-purple-700">Converted From Quote</p>
+                        <div class="mt-2 flex items-center justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-purple-900">{{ job.source_quote.quote_number }}</p>
+                                <p class="text-sm text-purple-800">This job card was created from the approved quote and carries over its scope and line items.</p>
+                            </div>
+                            <Link :href="route(`/quotes/${job.source_quote.id}`)" class="shrink-0 rounded-lg border border-purple-300 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100">
+                                View Quote
+                            </Link>
+                        </div>
+                    </div>
+
                     <!-- Job Details -->
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Job Details</h2>
@@ -196,13 +209,17 @@ function humanSize(bytes: number): string {
                                 <span class="ml-2 text-gray-900">{{ new Date(job.estimated_completion).toLocaleDateString('en-GB') }}</span>
                             </div>
                         </div>
-                        <div class="mt-4">
-                            <span class="text-sm text-gray-500">Description:</span>
-                            <p class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ job.description }}</p>
+                        <div v-if="job.customer_complaint" class="mt-4">
+                            <span class="text-sm text-gray-500">Customer Complaint:</span>
+                            <p class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ job.customer_complaint }}</p>
                         </div>
-                        <div v-if="job.notes" class="mt-4">
-                            <span class="text-sm text-gray-500">Notes:</span>
-                            <p class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ job.notes }}</p>
+                        <div v-if="job.work_required" class="mt-4">
+                            <span class="text-sm text-gray-500">Work Required:</span>
+                            <p class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ job.work_required }}</p>
+                        </div>
+                        <div v-if="job.technician_notes" class="mt-4">
+                            <span class="text-sm text-gray-500">Technician Notes:</span>
+                            <p class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ job.technician_notes }}</p>
                         </div>
                     </div>
 

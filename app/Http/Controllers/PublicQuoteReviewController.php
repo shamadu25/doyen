@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\QuoteAmendmentRequested;
 use App\Models\Quote;
 use App\Mail\QuoteApproved;
 use App\Mail\QuoteApprovedConfirmation;
 use App\Mail\QuoteDeclined;
+use App\Models\Setting;
 use App\Services\SmsService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -29,6 +32,25 @@ class PublicQuoteReviewController extends Controller
         }
 
         return view('quotes.public-review', compact('quote', 'token'));
+    }
+
+    /**
+     * Download the quote PDF from the public review page.
+     */
+    public function download(string $token)
+    {
+        $quote = Quote::where('review_token', $token)
+            ->with(['customer', 'vehicle', 'items'])
+            ->firstOrFail();
+
+        $garageSettings = Setting::getAllSettings();
+
+        $pdf = Pdf::loadView('pdf.quote', [
+            'quote'  => $quote,
+            'garage' => $garageSettings,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Quote-' . $quote->quote_number . '.pdf');
     }
 
     /**
@@ -182,5 +204,42 @@ class PublicQuoteReviewController extends Controller
 
         return redirect()->route('quote.review', $token)
             ->with('success', 'Thank you! Your preferred date has been sent to us. We will be in touch shortly to confirm the new time.');
+    }
+
+    /**
+     * Customer requests amendments to the quote via the public link.
+     */
+    public function requestAmendment(Request $request, string $token)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $quote = Quote::where('review_token', $token)
+            ->with(['customer', 'vehicle', 'appointment'])
+            ->firstOrFail();
+
+        if ($quote->status !== 'sent') {
+            return redirect()->route('quote.review', $token)
+                ->with('error', 'This quote cannot be amended at this stage.');
+        }
+
+        if ($quote->isExpired()) {
+            $quote->update(['status' => 'expired']);
+
+            return redirect()->route('quote.review', $token)
+                ->with('error', 'This quote has expired. Please contact us for an updated quote.');
+        }
+
+        try {
+            Mail::to(config('mail.from.address'))->send(
+                new QuoteAmendmentRequested($quote, $request->string('message')->toString(), 'public quote page')
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send quote amendment request email', ['error' => $e->getMessage(), 'quote_id' => $quote->id]);
+        }
+
+        return redirect()->route('quote.review', $token)
+            ->with('success', 'Your amendment request has been sent. We will review it and update your quote.');
     }
 }

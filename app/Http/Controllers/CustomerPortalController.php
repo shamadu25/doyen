@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminBookingAlert;
+use App\Mail\AppointmentCancelled;
+use App\Mail\QuoteAmendmentRequested;
 use App\Mail\TicketCreatedAdmin;
 use App\Mail\TicketCreatedCustomer;
 use App\Mail\TicketRepliedAdmin;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Appointment;
 use App\Models\Document;
@@ -13,12 +17,16 @@ use App\Models\SupportTicketReply;
 use App\Models\Vehicle;
 use App\Models\Invoice;
 use App\Models\JobCard;
+use App\Models\Quote;
+use App\Models\Setting;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CustomerPortalController extends Controller
 {
@@ -237,9 +245,18 @@ class CustomerPortalController extends Controller
 
         $customer = Customer::findOrFail(session('customer_id'));
         $jobCards = JobCard::where('customer_id', $customer->id)
-            ->with(['vehicle', 'services', 'parts'])
+            ->with(['vehicle', 'services.service', 'parts.part', 'documents' => fn ($query) => $query->visibleToCustomer()->latest(), 'invoice'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
+
+        $jobCards->getCollection()->transform(function (JobCard $jobCard) {
+            $jobCard->setRelation('documents', $jobCard->documents->map(function (Document $document) {
+                $document->setAttribute('download_url', route('customer.documents.download', $document));
+                return $document;
+            }));
+
+            return $jobCard;
+        });
 
         return Inertia::render('CustomerPortal/ServiceHistory', ['customer' => $customer, 'jobCards' => $jobCards]);
     }
@@ -310,10 +327,45 @@ class CustomerPortalController extends Controller
             ->latest()
             ->paginate(15);
 
+        $quotes->getCollection()->transform(function (Quote $quote) {
+            if ($quote->status === 'sent' && !$quote->review_token) {
+                $quote->generateReviewToken();
+                $quote->refresh();
+            }
+
+            $quote->setAttribute('review_url', $quote->review_token ? route('quote.review', $quote->review_token) : null);
+            $quote->setAttribute('download_url', route('customer.quotes.download', $quote));
+
+            return $quote;
+        });
+
         return Inertia::render('CustomerPortal/Quotes', [
             'customer' => $customer,
             'quotes'   => $quotes,
         ]);
+    }
+
+    /**
+     * Download a quote PDF from the customer portal.
+     */
+    public function downloadQuote(Quote $quote)
+    {
+        if (!session('customer_id')) return redirect()->route('customer.login');
+        $customer = Customer::findOrFail(session('customer_id'));
+
+        if ($quote->customer_id !== $customer->id) {
+            abort(403);
+        }
+
+        $quote->load(['customer', 'vehicle', 'items']);
+        $garageSettings = Setting::getAllSettings();
+
+        $pdf = Pdf::loadView('pdf.quote', [
+            'quote'  => $quote,
+            'garage' => $garageSettings,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Quote-' . $quote->quote_number . '.pdf');
     }
 
     /**
@@ -347,6 +399,34 @@ class CustomerPortalController extends Controller
         $quote->decline();
 
         return back()->with('success', 'Quote declined. You can contact us if you have any questions.');
+    }
+
+    /**
+     * Customer requests a quote amendment instead of approving or declining it.
+     */
+    public function requestQuoteAmendment(Request $request, Quote $quote)
+    {
+        if (!session('customer_id')) return redirect()->route('customer.login');
+        $customer = Customer::findOrFail(session('customer_id'));
+
+        if ($quote->customer_id !== $customer->id) abort(403);
+        if ($quote->status !== 'sent') return back()->withErrors(['error' => 'This quote is no longer available for amendment requests.']);
+        if ($quote->isExpired()) return back()->withErrors(['error' => 'This quote has expired. Please contact us for a revised quote.']);
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        try {
+            $quote->loadMissing(['customer', 'vehicle', 'appointment']);
+            Mail::to(config('mail.from.address'))->send(
+                new QuoteAmendmentRequested($quote, $validated['message'], 'customer portal')
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send quote amendment request email', ['error' => $e->getMessage(), 'quote_id' => $quote->id]);
+        }
+
+        return back()->with('success', 'Your amendment request has been sent. We will review it and update the quote.');
     }
 
     /**
@@ -543,7 +623,41 @@ class CustomerPortalController extends Controller
             'cancellation_reason' => $request->cancellation_reason,
         ]);
 
-        return back()->with('success', 'Appointment cancelled.');
+        ActivityLog::log('cancelled', "Booking {$appointment->reference_number} cancelled by customer", $appointment);
+
+        try {
+            $appointment->load(['customer', 'vehicle']);
+            Mail::to($appointment->customer->email)->send(new AppointmentCancelled($appointment));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send appointment cancellation email from customer portal', [
+                'appointment_id' => $appointment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $appointment->loadMissing(['customer', 'vehicle']);
+            $adminEmail = env('ADMIN_EMAIL', env('GARAGE_EMAIL', config('mail.from.address')));
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new AdminBookingAlert($appointment, 'cancelled'));
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin booking cancelled alert from customer portal', [
+                'appointment_id' => $appointment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            (new SmsService())->sendAdminBookingStatusAlert($appointment, 'cancelled');
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send admin cancel SMS from customer portal', [
+                'appointment_id' => $appointment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return back()->with('success', 'Appointment cancelled and notifications sent.');
     }
 
     /**

@@ -6,6 +6,7 @@ import CustomerPortalLayout from '@/Layouts/CustomerPortalLayout.vue'
 const props = defineProps<{ customer: any; quotes: any }>()
 
 const flash = computed(() => (usePage().props.flash as any) ?? {})
+const errors = computed(() => (usePage().props.errors as Record<string, string>) ?? {})
 
 function fmt(v: any) { return '£' + parseFloat(v || 0).toFixed(2) }
 function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-GB') : '—' }
@@ -26,6 +27,8 @@ function lineVat(item: any, quote: any) {
 function lineGross(item: any, quote: any) { return lineNet(item, quote) + lineVat(item, quote) }
 
 const confirmAction = ref<{ quoteId: number; action: 'approve' | 'reject' } | null>(null)
+const amendmentQuote = ref<any | null>(null)
+const amendmentMessage = ref('')
 const submitting = ref(false)
 
 function confirmApprove(id: number) { confirmAction.value = { quoteId: id, action: 'approve' } }
@@ -37,6 +40,28 @@ function executeAction() {
     const { quoteId, action } = confirmAction.value
     router.post(`/customer/quotes/${quoteId}/${action}`, {}, {
         onFinish: () => { submitting.value = false; confirmAction.value = null },
+    })
+}
+
+function openAmendment(quote: any) {
+    amendmentQuote.value = quote
+    amendmentMessage.value = ''
+}
+
+function submitAmendment() {
+    if (!amendmentQuote.value || !amendmentMessage.value.trim()) return
+
+    submitting.value = true
+    router.post(`/customer/quotes/${amendmentQuote.value.id}/request-amendment`, {
+        message: amendmentMessage.value.trim(),
+    }, {
+        onSuccess: () => {
+            submitting.value = false
+            amendmentQuote.value = null
+            amendmentMessage.value = ''
+        },
+        onError: () => { submitting.value = false },
+        onFinish: () => { submitting.value = false },
     })
 }
 
@@ -67,6 +92,9 @@ function isExpired(q: any) {
             <!-- Flash -->
             <div v-if="flash.success" class="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-green-800 text-sm">
                 {{ flash.success }}
+            </div>
+            <div v-if="errors.error" class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
+                {{ errors.error }}
             </div>
 
             <div v-if="!quotes.data?.length"
@@ -136,17 +164,33 @@ function isExpired(q: any) {
                     ⚠ This quote has expired. Contact us for an updated quote.
                 </div>
 
-                <!-- Approve / Reject (only for sent + not expired) -->
-                <div v-if="quote.status === 'sent' && !isExpired(quote)"
-                    class="border-t border-gray-100 bg-gray-50 px-5 py-3 flex gap-3">
-                    <button @click="confirmApprove(quote.id)"
-                        class="flex-1 rounded-lg bg-electric-600 py-2 text-sm font-semibold text-white hover:bg-electric-700 transition">
-                        ✓ Approve Quote
-                    </button>
-                    <button @click="confirmReject(quote.id)"
-                        class="flex-1 rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition">
-                        Decline
-                    </button>
+                <div class="border-t border-gray-100 bg-gray-50 px-5 py-3 space-y-3">
+                    <div class="flex flex-wrap gap-3">
+                        <a v-if="quote.review_url" :href="quote.review_url" target="_blank"
+                            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition">
+                            View Quote
+                        </a>
+                        <a :href="quote.download_url"
+                            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition">
+                            Download PDF
+                        </a>
+                        <button v-if="quote.status === 'sent' && !isExpired(quote)" @click="openAmendment(quote)"
+                            class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 transition">
+                            Request Amendment
+                        </button>
+                    </div>
+
+                    <!-- Approve / Reject (only for sent + not expired) -->
+                    <div v-if="quote.status === 'sent' && !isExpired(quote)" class="flex flex-wrap gap-3">
+                        <button @click="confirmApprove(quote.id)"
+                            class="flex-1 rounded-lg bg-electric-600 py-2 text-sm font-semibold text-white hover:bg-electric-700 transition">
+                            Approve Quote
+                        </button>
+                        <button @click="confirmReject(quote.id)"
+                            class="flex-1 rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition">
+                            Decline
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Approved banner -->
@@ -186,6 +230,29 @@ function isExpired(q: any) {
                         <button @click="executeAction" :disabled="submitting"
                             :class="['flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50', confirmAction.action === 'approve' ? 'bg-electric-600 hover:bg-electric-700' : 'bg-red-600 hover:bg-red-700']">
                             {{ submitting ? 'Processing…' : confirmAction.action === 'approve' ? 'Yes, Approve' : 'Yes, Decline' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="amendmentQuote" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Request Quote Amendment</h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Tell us what needs to change on {{ amendmentQuote.quote_number }} and we’ll review it.
+                    </p>
+                    <textarea v-model="amendmentMessage" rows="5"
+                        class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-electric-500 focus:outline-none focus:ring-2 focus:ring-electric-200"
+                        placeholder="Example: please remove item X, update the labour line, or revise the scope." />
+                    <p v-if="errors.message" class="mt-2 text-sm text-red-600">{{ errors.message }}</p>
+                    <div class="mt-5 flex gap-3">
+                        <button @click="amendmentQuote = null"
+                            class="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button @click="submitAmendment" :disabled="submitting || !amendmentMessage.trim()"
+                            class="flex-1 rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
+                            {{ submitting ? 'Sending…' : 'Send Request' }}
                         </button>
                     </div>
                 </div>

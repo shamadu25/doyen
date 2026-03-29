@@ -5,6 +5,26 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 type DayConfig = { open: boolean; start: string; end: string }
 type BookingHours = Record<string, DayConfig>
+type SmsTemplate = {
+    key: string
+    label: string
+    audience: 'customer' | 'admin'
+    description: string
+    placeholders: string[]
+    content: string
+}
+type SmsLog = {
+    id: number
+    template_key: string | null
+    audience: string
+    recipient: string
+    message: string
+    status: string
+    error_message: string | null
+    provider: string | null
+    created_at: string | null
+    sent_at: string | null
+}
 
 const props = defineProps<{
     settings: {
@@ -38,10 +58,26 @@ const props = defineProps<{
         invoice_header_email: string
         invoice_header_website: string
         sms_enabled: string
+        sms_admin_phone: string
         email_notifications: string
     }
     bookingHours: BookingHours
     closedDates: string[]
+    smsTemplates: SmsTemplate[]
+    smsLogs: SmsLog[]
+    smsStats: {
+        total: number
+        sent: number
+        failed: number
+        skipped: number
+    }
+    smsConfig: {
+        enabled: boolean
+        admin_phone: string
+        twilio_sid_configured: boolean
+        twilio_token_configured: boolean
+        twilio_from: string
+    }
 }>()
 
 const route = inject<(path: string) => string>('route', (p) => p)
@@ -77,6 +113,8 @@ const form = useForm({
     invoice_header_email: props.settings.invoice_header_email || '',
     invoice_header_website: props.settings.invoice_header_website || '',
     sms_enabled: props.settings.sms_enabled || '0',
+    sms_admin_phone: props.settings.sms_admin_phone || '',
+    sms_templates: Object.fromEntries(props.smsTemplates.map(template => [template.key, template.content])),
     email_notifications: props.settings.email_notifications || '1',
 })
 
@@ -143,6 +181,29 @@ function formatDate(d: string) {
 }
 
 const flash = computed(() => (usePage().props.flash as any) ?? {})
+const customerSmsTemplates = computed(() => props.smsTemplates.filter(template => template.audience === 'customer'))
+const adminSmsTemplates = computed(() => props.smsTemplates.filter(template => template.audience === 'admin'))
+
+function formatDateTime(value: string | null) {
+    if (!value) return 'Not sent'
+    return new Date(value).toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}
+
+function statusClasses(status: string) {
+    if (status === 'sent') return 'bg-green-100 text-green-800 border-green-200'
+    if (status === 'failed') return 'bg-red-100 text-red-800 border-red-200'
+    return 'bg-amber-100 text-amber-800 border-amber-200'
+}
+
+function placeholderChip(value: string) {
+    return `{{${value}}}`
+}
 </script>
 
 <template>
@@ -360,6 +421,99 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                                 <p class="text-xs text-gray-500">Send SMS reminders (requires Twilio configuration)</p>
                             </div>
                         </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Admin SMS Number</label>
+                                <input v-model="form.sms_admin_phone" type="tel" class="w-full rounded-lg border-gray-300 text-sm" placeholder="e.g. 07700111222" />
+                                <p class="text-xs text-gray-500 mt-1">Booking and payment alerts to admin will go to this number.</p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                <p class="text-sm font-semibold text-gray-900">Twilio Status</p>
+                                <p class="text-xs text-gray-600 mt-1">SID: {{ smsConfig.twilio_sid_configured ? 'Configured' : 'Missing' }}</p>
+                                <p class="text-xs text-gray-600">Token: {{ smsConfig.twilio_token_configured ? 'Configured' : 'Missing' }}</p>
+                                <p class="text-xs text-gray-600">From: {{ smsConfig.twilio_from || 'Not set' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">SMS Templates</h2>
+                            <p class="text-sm text-gray-500 mt-1">Edit every customer and admin SMS in one place. Use the placeholders shown under each template.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-center text-xs shrink-0">
+                            <div class="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+                                <p class="text-gray-500">Total</p>
+                                <p class="text-base font-semibold text-gray-900">{{ smsStats.total }}</p>
+                            </div>
+                            <div class="rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                                <p class="text-green-700">Sent</p>
+                                <p class="text-base font-semibold text-green-900">{{ smsStats.sent }}</p>
+                            </div>
+                            <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                                <p class="text-red-700">Failed</p>
+                                <p class="text-base font-semibold text-red-900">{{ smsStats.failed }}</p>
+                            </div>
+                            <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                                <p class="text-amber-700">Skipped</p>
+                                <p class="text-base font-semibold text-amber-900">{{ smsStats.skipped }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                        <p class="font-semibold">Available placeholders</p>
+                        <p class="mt-1 text-blue-700">Use double curly braces like <span class="font-mono">{{ placeholderChip('customer_name') }}</span> or <span class="font-mono">{{ placeholderChip('invoice_number') }}</span>. Anything left unmatched will be removed automatically when the SMS is sent.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Customer Messages</h3>
+                            <div class="space-y-4">
+                                <div v-for="template in customerSmsTemplates" :key="template.key" class="rounded-xl border border-gray-200 p-4">
+                                    <div class="flex items-start justify-between gap-4 mb-3">
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-gray-900">{{ template.label }}</h4>
+                                            <p class="text-xs text-gray-500 mt-1">{{ template.description }}</p>
+                                        </div>
+                                        <span class="rounded-full bg-electric-50 text-electric-700 border border-electric-200 px-2.5 py-1 text-xs font-medium">Customer</span>
+                                    </div>
+                                    <textarea
+                                        v-model="form.sms_templates[template.key]"
+                                        rows="5"
+                                        class="w-full rounded-lg border-gray-300 text-sm"
+                                    ></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        Placeholders: {{ template.placeholders.map(placeholderChip).join(', ') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Admin Messages</h3>
+                            <div class="space-y-4">
+                                <div v-for="template in adminSmsTemplates" :key="template.key" class="rounded-xl border border-gray-200 p-4">
+                                    <div class="flex items-start justify-between gap-4 mb-3">
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-gray-900">{{ template.label }}</h4>
+                                            <p class="text-xs text-gray-500 mt-1">{{ template.description }}</p>
+                                        </div>
+                                        <span class="rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs font-medium">Admin</span>
+                                    </div>
+                                    <textarea
+                                        v-model="form.sms_templates[template.key]"
+                                        rows="5"
+                                        class="w-full rounded-lg border-gray-300 text-sm"
+                                    ></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        Placeholders: {{ template.placeholders.map(placeholderChip).join(', ') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -441,6 +595,45 @@ const flash = computed(() => (usePage().props.flash as any) ?? {})
                 </div>
                 <div v-else class="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
                     No dates blocked. All working days are open for bookings.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div class="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">SMS Monitoring</h2>
+                        <p class="text-sm text-gray-500 mt-1">Recent SMS attempts across the whole system, including sent, failed, and skipped messages.</p>
+                    </div>
+                    <a :href="route('/settings/sms-test')" class="px-4 py-2 border border-electric-300 text-electric-700 rounded-lg hover:bg-electric-50 text-sm font-medium whitespace-nowrap">
+                        Send Test SMS
+                    </a>
+                </div>
+
+                <div v-if="smsLogs.length" class="space-y-3">
+                    <div v-for="log in smsLogs" :key="log.id" class="rounded-xl border border-gray-200 p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900">{{ log.template_key || 'Manual SMS' }}</span>
+                                    <span class="rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusClasses(log.status)">
+                                        {{ log.status }}
+                                    </span>
+                                    <span class="rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs font-medium capitalize">
+                                        {{ log.audience }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500">To {{ log.recipient }} • {{ formatDateTime(log.sent_at || log.created_at) }}</p>
+                            </div>
+                            <span class="text-xs text-gray-400 uppercase tracking-wide">{{ log.provider || 'SMS' }}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 whitespace-pre-line mt-3">{{ log.message }}</p>
+                        <p v-if="log.error_message" class="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                            {{ log.error_message }}
+                        </p>
+                    </div>
+                </div>
+                <div v-else class="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                    No SMS history yet. Once messages start sending, they will appear here.
                 </div>
             </div>
 

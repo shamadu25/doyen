@@ -39,6 +39,12 @@
             <span class="info-label">Date &amp; Time:</span>
             <span class="info-value">{{ \Carbon\Carbon::parse($appointment->scheduled_date)->format('l, j F Y \a\t g:i A') }}</span>
         </div>
+        @if($alertType === 'cancelled' && $appointment->cancellation_reason)
+        <div class="info-row">
+            <span class="info-label">Cancellation Reason:</span>
+            <span class="info-value">{{ $appointment->cancellation_reason }}</span>
+        </div>
+        @endif
         @if($appointment->description)
         <div class="info-row">
             <span class="info-label">Description:</span>

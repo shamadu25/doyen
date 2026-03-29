@@ -60,6 +60,10 @@
         .btn-decline:hover  { background:#fee2e2; }
         .btn-suggest  { background:#fff; color:#1d4ed8; border:2px solid #1d4ed8; }
         .btn-suggest:hover  { background:#eff6ff; }
+        .btn-amend   { background:#fff; color:#b45309; border:2px solid #f59e0b; }
+        .btn-amend:hover   { background:#fffbeb; }
+        .btn-download { background:#fff; color:#334155; border:2px solid #cbd5e1; }
+        .btn-download:hover { background:#f8fafc; }
         .btn-disabled { background:#e2e8f0; color:#94a3b8; cursor:not-allowed; }
 
         /* Inline forms for decline/suggest */
@@ -103,6 +107,9 @@
     @endif
     @if(session('error'))
         <div class="alert alert-error">⚠️ {{ session('error') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-error">⚠️ {{ $errors->first() }}</div>
     @endif
 
     {{-- Expired notice --}}
@@ -251,6 +258,15 @@
     </div>
     @endif
 
+    <div class="card">
+        <div class="card-header"><h2>Quote Copy</h2></div>
+        <div class="card-body">
+            <div class="actions" style="margin-top:0;">
+                <a href="{{ route('quote.download', $token) }}" class="btn btn-download">Download PDF</a>
+            </div>
+        </div>
+    </div>
+
     {{-- Action buttons — only shown when quote is still 'sent' --}}
     @if($quote->status === 'sent' && !$quote->isExpired())
     <div class="card">
@@ -270,12 +286,16 @@
                 </form>
 
                 {{-- Suggest Date toggle --}}
-                <button type="button" class="btn btn-suggest" onclick="toggleForm('suggestForm', 'declineForm')">
+                <button type="button" class="btn btn-suggest" onclick="toggleForm('suggestForm')">
                     📅 Suggest Different Date
                 </button>
 
+                <button type="button" class="btn btn-amend" onclick="toggleForm('amendForm')">
+                    Request Amendment
+                </button>
+
                 {{-- Decline toggle --}}
-                <button type="button" class="btn btn-decline" onclick="toggleForm('declineForm', 'suggestForm')">
+                <button type="button" class="btn btn-decline" onclick="toggleForm('declineForm')">
                     ❌ Decline Quote
                 </button>
             </div>
@@ -333,6 +353,24 @@
                 </form>
             </div>
 
+            <div class="collapsible-form" id="amendForm">
+                <p style="font-size:13px;color:#475569;margin-bottom:12px;">
+                    Tell us what you would like changed and we will review the quote before you approve it.
+                </p>
+                <form method="POST" action="{{ route('quote.request-amendment', $token) }}">
+                    @csrf
+                    <div class="form-group">
+                        <label for="message">What would you like amended? *</label>
+                        <textarea id="message" name="message" maxlength="1000" required
+                                  placeholder="Example: remove a line item, revise labour, or change the scope of work.">{{ old('message') }}</textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:4px;">
+                        <button type="submit" class="btn-submit" style="background:#f59e0b;color:#fff;">Send Amendment Request</button>
+                        <button type="button" class="btn-cancel-form" onclick="toggleForm(null)">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
             {{-- Decline inline form --}}
             <div class="collapsible-form" id="declineForm">
                 <p style="font-size:13px;color:#475569;margin-bottom:12px;">
@@ -360,16 +398,15 @@
     </div>
 
     <script>
-    function toggleForm(showId, hideId) {
-        if (hideId) {
-            var el = document.getElementById(hideId);
-            if (el) el.classList.remove('visible');
-        }
-        if (showId) {
-            var target = document.getElementById(showId);
-            if (target) {
-                var isVisible = target.classList.contains('visible');
-                target.classList.toggle('visible', !isVisible);
+    function toggleForm(showId) {
+        ['suggestForm', 'amendForm', 'declineForm'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (id === showId) {
+                var isVisible = el.classList.contains('visible');
+                el.classList.toggle('visible', !isVisible);
+            } else {
+                el.classList.remove('visible');
             }
         }
     }

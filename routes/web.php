@@ -31,6 +31,7 @@ use App\Http\Controllers\WhatsAppSupportController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AboutController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SitemapController;
 
 // Sitemap & SEO
@@ -60,6 +61,8 @@ Route::get('/quote/review/{token}', [PublicQuoteReviewController::class, 'show']
 Route::post('/quote/review/{token}/approve', [PublicQuoteReviewController::class, 'approve'])->name('quote.approve');
 Route::post('/quote/review/{token}/decline', [PublicQuoteReviewController::class, 'decline'])->name('quote.decline');
 Route::post('/quote/review/{token}/suggest-date', [PublicQuoteReviewController::class, 'suggestDate'])->name('quote.suggest-date');
+Route::get('/quote/review/{token}/download', [PublicQuoteReviewController::class, 'download'])->name('quote.download');
+Route::post('/quote/review/{token}/request-amendment', [PublicQuoteReviewController::class, 'requestAmendment'])->name('quote.request-amendment');
 
 // Authentication
 Route::middleware('guest')->group(function () {
@@ -232,9 +235,13 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/invoices', [CustomerPortalController::class, 'invoices'])->name('invoices');
     Route::get('/invoices/{invoice}/download', [CustomerPortalController::class, 'downloadInvoice'])->name('invoices.download');
     Route::get('/service-history', [CustomerPortalController::class, 'serviceHistory'])->name('service-history');
+    Route::get('/documents', [CustomerPortalController::class, 'documents'])->name('documents');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'customerDownload'])->name('documents.download');
     Route::get('/quotes', [CustomerPortalController::class, 'quotes'])->name('quotes');
+    Route::get('/quotes/{quote}/download', [CustomerPortalController::class, 'downloadQuote'])->name('quotes.download');
     Route::post('/quotes/{quote}/approve', [CustomerPortalController::class, 'approveQuote'])->name('quotes.approve');
     Route::post('/quotes/{quote}/reject', [CustomerPortalController::class, 'rejectQuote'])->name('quotes.reject');
+    Route::post('/quotes/{quote}/request-amendment', [CustomerPortalController::class, 'requestQuoteAmendment'])->name('quotes.request-amendment');
     Route::get('/profile', [CustomerPortalController::class, 'profile'])->name('profile');
     Route::put('/profile', [CustomerPortalController::class, 'updateProfile'])->name('profile.update');
     Route::put('/profile/password', [CustomerPortalController::class, 'updatePassword'])->name('profile.password');
