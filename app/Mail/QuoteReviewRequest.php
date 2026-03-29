@@ -21,7 +21,7 @@ class QuoteReviewRequest extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Quote ' . $this->quote->quote_number . ' — View Online',
+            subject: 'Your Quote ' . $this->quote->quote_number . ' — Review & Approve',
         );
     }
 

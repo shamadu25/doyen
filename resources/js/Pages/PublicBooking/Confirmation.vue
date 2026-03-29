@@ -21,6 +21,7 @@ interface Props {
     booking: Booking
     reference: string
     account_created?: boolean
+    account_connected?: boolean
     portal_url?: string
 }
 
@@ -184,14 +185,19 @@ const appointmentTypeLabels: Record<string, string> = {
             </div>
 
             <!-- Customer Portal Access (shown when account was created) -->
-            <div v-if="account_created && portal_url" class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+            <div v-if="(account_created || account_connected) && portal_url" class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    Your Customer Portal Account is Ready!
+                    {{ account_created ? 'Your Customer Portal Account is Ready!' : 'Booking Linked To Your Customer Portal' }}
                 </h3>
-                <p class="text-sm text-gray-700 mb-4">You can now log in to your customer portal to track this booking, view invoices, check quotes, and manage your vehicles.</p>
+                <p class="text-sm text-gray-700 mb-4">
+                    {{ account_created
+                        ? 'You can now log in to your customer portal to track this booking, view invoices, check quotes, and manage your vehicles.'
+                        : 'This booking has been connected to your existing customer portal account, so you can track it online straight away.'
+                    }}
+                </p>
                 <a
                     :href="portal_url"
                     class="inline-flex items-center px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition"

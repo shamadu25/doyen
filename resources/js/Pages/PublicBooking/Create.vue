@@ -7,10 +7,20 @@ const route = inject<(path: string) => string>('route', (p) => p)
 
 // Booking availability from admin settings
 interface DayConfig { open: boolean; start: string; end: string }
+interface ExistingCustomer {
+    id: number
+    first_name: string
+    last_name: string
+    email: string
+    phone: string | null
+    address: string | null
+    postcode: string | null
+}
 const props = defineProps<{
     bookingHours: Record<string, DayConfig>
     closedDates: string[]
     slotDuration: number
+    existingCustomer: ExistingCustomer | null
 }>()
 
 // Garage contact details from shared props
@@ -47,15 +57,16 @@ function formatDateDisplay(dateStr: string): string {
 }
 
 const form = useForm({
-    customer_type: 'new',
+    customer_type: props.existingCustomer ? 'existing' : 'new',
 
     // Customer details
-    customer_first_name: '',
-    customer_last_name: '',
-    customer_email: '',
-    customer_phone: '',
-    customer_address: '',
-    customer_postcode: '',
+    customer_first_name: props.existingCustomer?.first_name || '',
+    customer_last_name: props.existingCustomer?.last_name || '',
+    customer_email: props.existingCustomer?.email || '',
+    customer_phone: props.existingCustomer?.phone || '',
+    customer_address: props.existingCustomer?.address || '',
+    customer_postcode: props.existingCustomer?.postcode || '',
+    customer_password: '',
     
     // Vehicle details
     vehicle_registration: '',
@@ -83,6 +94,8 @@ const form = useForm({
     password: '',
     password_confirmation: '',
 })
+
+const existingCustomerLoggedIn = computed(() => !!props.existingCustomer)
 
 const selectedFiles = ref<File[]>([])
 
@@ -140,6 +153,25 @@ watch(() => form.vehicle_registration, (newValue) => {
             lookupVehicle(cleanReg)
         }, 800)
     }
+})
+
+watch(() => form.customer_type, (newType) => {
+    if (newType === 'existing') {
+        form.create_account = false
+        form.password = ''
+        form.password_confirmation = ''
+        if (props.existingCustomer) {
+            form.customer_first_name = props.existingCustomer.first_name || ''
+            form.customer_last_name = props.existingCustomer.last_name || ''
+            form.customer_email = props.existingCustomer.email || ''
+            form.customer_phone = props.existingCustomer.phone || ''
+            form.customer_address = props.existingCustomer.address || ''
+            form.customer_postcode = props.existingCustomer.postcode || ''
+        }
+        return
+    }
+
+    form.customer_password = ''
 })
 
 async function lookupVehicle(registration: string) {
@@ -362,7 +394,16 @@ function previousStep() {
 }
 
 function submit() {
-    if (!form.customer_first_name || !form.customer_last_name || !form.customer_email || !form.customer_phone) {
+    if (form.customer_type === 'existing') {
+        if (!form.customer_email) {
+            alert('Please enter your login email')
+            return
+        }
+        if (!existingCustomerLoggedIn.value && !form.customer_password) {
+            alert('Please enter your password to connect this booking to your account')
+            return
+        }
+    } else if (!form.customer_first_name || !form.customer_last_name || !form.customer_email || !form.customer_phone) {
         alert('Please complete your contact details')
         return
     }
@@ -482,7 +523,76 @@ function submit() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div v-if="form.customer_type === 'existing'" class="space-y-6">
+                        <div v-if="existingCustomerLoggedIn" class="rounded-xl border border-green-200 bg-green-50 p-4">
+                            <h3 class="text-sm font-semibold text-green-900">Booking will be linked to your customer account</h3>
+                            <p class="text-sm text-green-800 mt-1">{{ form.customer_first_name }} {{ form.customer_last_name }} · {{ form.customer_email }}</p>
+                            <p class="text-xs text-green-700 mt-1">You are already signed in, so this booking will automatically connect to your portal account.</p>
+                        </div>
+
+                        <div v-else class="rounded-xl border border-electric-200 bg-electric-50 p-4">
+                            <h3 class="text-sm font-semibold text-gray-900">Existing customer login</h3>
+                            <p class="text-xs text-gray-600 mt-1">Sign in with your customer portal email and password. Your booking will be attached to your existing account automatically.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Email Address <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model="form.customer_email"
+                                    type="email"
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-600 focus:ring-electric-600"
+                                    :class="{ 'border-red-500': form.errors.customer_email }"
+                                    :readonly="existingCustomerLoggedIn"
+                                    required
+                                />
+                                <p v-if="form.errors.customer_email" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.customer_email }}
+                                </p>
+                            </div>
+
+                            <div v-if="!existingCustomerLoggedIn">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Password <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model="form.customer_password"
+                                    type="password"
+                                    autocomplete="current-password"
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-electric-600 focus:ring-electric-600"
+                                    :class="{ 'border-red-500': form.errors.customer_password }"
+                                    required
+                                />
+                                <p v-if="form.errors.customer_password" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.customer_password }}
+                                </p>
+                            </div>
+
+                            <div v-if="existingCustomerLoggedIn">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <input
+                                    v-model="form.customer_phone"
+                                    type="tel"
+                                    readonly
+                                    class="w-full rounded-lg border-gray-200 bg-gray-50 text-gray-600 shadow-sm"
+                                />
+                            </div>
+
+                            <div class="md:col-span-2" v-if="existingCustomerLoggedIn">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                <input
+                                    v-model="form.customer_address"
+                                    type="text"
+                                    readonly
+                                    class="w-full rounded-lg border-gray-200 bg-gray-50 text-gray-600 shadow-sm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 First Name <span class="text-red-500">*</span>
@@ -576,7 +686,6 @@ function submit() {
                             <p v-if="form.errors.customer_postcode" class="mt-1 text-xs text-red-600">{{ form.errors.customer_postcode }}</p>
                         </div>
 
-                        <!-- Optional Portal Account Creation -->
                         <div class="md:col-span-2">
                             <div class="border border-electric-200 rounded-xl p-4 bg-electric-50">
                                 <label class="flex items-center gap-3 cursor-pointer select-none">

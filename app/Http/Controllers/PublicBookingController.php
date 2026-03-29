@@ -39,27 +39,33 @@ class PublicBookingController extends Controller
             ? array_values(json_decode($settings['booking_closed_dates'], true))
             : [];
         $slotDuration = (int)($settings['booking_slot_duration'] ?? 30);
+        $existingCustomer = session('customer_id')
+            ? Customer::find(session('customer_id'))
+            : null;
 
         return Inertia::render('PublicBooking/Create', [
             'bookingHours' => $bookingHours,
             'closedDates'  => $closedDates,
             'slotDuration' => $slotDuration,
+            'existingCustomer' => $existingCustomer ? [
+                'id' => $existingCustomer->id,
+                'first_name' => $existingCustomer->first_name,
+                'last_name' => $existingCustomer->last_name,
+                'email' => $existingCustomer->email,
+                'phone' => $existingCustomer->phone,
+                'address' => $existingCustomer->address,
+                'postcode' => $existingCustomer->postcode,
+            ] : null,
         ]);
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $isExistingCustomer = $request->input('customer_type', 'new') === 'existing';
+
+        $rules = [
             'customer_type' => 'nullable|in:existing,new',
 
-            // Customer details
-            'customer_first_name' => 'required|string|max:255',
-            'customer_last_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
-            'customer_phone' => 'required|string|max:20',
-            'customer_address' => 'required|string|max:500',
-            'customer_postcode' => 'required|string|max:10|regex:/^[A-Za-z0-9 ]{2,10}$/',
-            
             // Vehicle details
             'vehicle_registration' => 'required|string|max:20',
             'vehicle_make' => 'required|string|max:100',
@@ -108,7 +114,55 @@ class PublicBookingController extends Controller
             // Optional portal account creation
             'create_account' => 'nullable|boolean',
             'password' => 'required_if:create_account,1|nullable|string|min:8|confirmed',
-        ]);
+        ];
+
+        if ($isExistingCustomer) {
+            $rules = array_merge($rules, [
+                'customer_email' => 'required|email|max:255',
+                'customer_password' => 'nullable|string',
+            ]);
+        } else {
+            $rules = array_merge($rules, [
+                'customer_first_name' => 'required|string|max:255',
+                'customer_last_name' => 'required|string|max:255',
+                'customer_email' => 'required|email|max:255',
+                'customer_phone' => 'required|string|max:20',
+                'customer_address' => 'required|string|max:500',
+                'customer_postcode' => 'required|string|max:10|regex:/^[A-Za-z0-9 ]{2,10}$/',
+            ]);
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        $validator->after(function ($validator) use ($request, $isExistingCustomer) {
+            if (!$isExistingCustomer) {
+                $existingCustomer = Customer::withTrashed()->where('email', $request->customer_email)->first();
+                if ($existingCustomer && $existingCustomer->password) {
+                    $validator->errors()->add('customer_email', 'This email already belongs to an existing customer account. Please choose Existing Customer and log in.');
+                }
+                return;
+            }
+
+            $sessionCustomer = session('customer_id') ? Customer::find(session('customer_id')) : null;
+            if ($sessionCustomer && strcasecmp((string) $sessionCustomer->email, (string) $request->customer_email) === 0) {
+                return;
+            }
+
+            $customer = Customer::where('email', $request->customer_email)->first();
+            if (!$customer) {
+                $validator->errors()->add('customer_email', 'We could not find an existing customer account with that email address.');
+                return;
+            }
+
+            if (!$customer->password) {
+                $validator->errors()->add('customer_email', 'This customer account has not set a portal password yet. Please register normally or set a portal password first.');
+                return;
+            }
+
+            if (!$request->filled('customer_password') || !Hash::check($request->customer_password, $customer->password)) {
+                $validator->errors()->add('customer_password', 'The login details for this customer account are incorrect.');
+            }
+        });
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
@@ -117,35 +171,46 @@ class PublicBookingController extends Controller
         try {
             DB::beginTransaction();
 
-            // Find or create customer — use withTrashed() so soft-deleted records
-            // don't cause a duplicate-email constraint violation on re-booking.
-            $customer = Customer::withTrashed()->where('email', $request->customer_email)->first();
+            $customer = null;
 
-            if (!$customer) {
-                $customer = Customer::create([
-                    'first_name' => $request->customer_first_name,
-                    'last_name' => $request->customer_last_name,
-                    'email' => $request->customer_email,
-                    'phone' => $request->customer_phone,
-                    'address' => $request->customer_address ?? '',
-                    'city' => 'Glasgow', // Default city
-                    'postcode' => $request->customer_postcode ?? '',
-                    'customer_type' => 'individual',
-                    'is_active' => true,
-                ]);
-            } else {
-                // Restore if previously soft-deleted, then update details
-                if ($customer->trashed()) {
-                    $customer->restore();
+            if ($isExistingCustomer) {
+                $sessionCustomer = session('customer_id') ? Customer::find(session('customer_id')) : null;
+                if ($sessionCustomer && strcasecmp((string) $sessionCustomer->email, (string) $request->customer_email) === 0) {
+                    $customer = $sessionCustomer;
+                } else {
+                    $customer = Customer::where('email', $request->customer_email)->firstOrFail();
+                    session(['customer_id' => $customer->id]);
                 }
-                $customer->update([
-                    'first_name' => $request->customer_first_name,
-                    'last_name' => $request->customer_last_name,
-                    'phone' => $request->customer_phone,
-                    'address' => $request->customer_address ?? $customer->address,
-                    'postcode' => $request->customer_postcode ?? $customer->postcode,
-                    'is_active' => true,
-                ]);
+            } else {
+                // Find or create customer — use withTrashed() so soft-deleted records
+                // don't cause a duplicate-email constraint violation on re-booking.
+                $customer = Customer::withTrashed()->where('email', $request->customer_email)->first();
+
+                if (!$customer) {
+                    $customer = Customer::create([
+                        'first_name' => $request->customer_first_name,
+                        'last_name' => $request->customer_last_name,
+                        'email' => $request->customer_email,
+                        'phone' => $request->customer_phone,
+                        'address' => $request->customer_address ?? '',
+                        'city' => 'Glasgow',
+                        'postcode' => $request->customer_postcode ?? '',
+                        'customer_type' => 'individual',
+                        'is_active' => true,
+                    ]);
+                } else {
+                    if ($customer->trashed()) {
+                        $customer->restore();
+                    }
+                    $customer->update([
+                        'first_name' => $request->customer_first_name,
+                        'last_name' => $request->customer_last_name,
+                        'phone' => $request->customer_phone,
+                        'address' => $request->customer_address ?? $customer->address,
+                        'postcode' => $request->customer_postcode ?? $customer->postcode,
+                        'is_active' => true,
+                    ]);
+                }
             }
 
             // Find or create vehicle — lookup by registration ONLY (UK plate is globally unique)
@@ -200,7 +265,7 @@ class PublicBookingController extends Controller
 
             // Create customer portal account if requested
             $accountCreated = false;
-            if ($request->boolean('create_account') && $request->filled('password')) {
+            if (!$isExistingCustomer && $request->boolean('create_account') && $request->filled('password')) {
                 if (!$customer->password) {
                     $customer->update(['password' => Hash::make($request->password)]);
                 }
@@ -285,6 +350,7 @@ class PublicBookingController extends Controller
             ],
             'reference' => $appointment->reference_number,
             'account_created' => (bool) session('account_created'),
+            'account_connected' => session()->has('customer_id'),
             'portal_url' => route('customer.dashboard'),
         ]);
     }

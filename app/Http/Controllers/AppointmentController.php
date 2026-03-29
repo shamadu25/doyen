@@ -415,6 +415,7 @@ class AppointmentController extends Controller
 
         $quote->calculateTotals();
         $token = $quote->generateReviewToken();
+        $quote->update(['status' => 'sent']);
 
         // Update booking status to pending_quote
         $booking->update(['status' => 'pending_quote']);
