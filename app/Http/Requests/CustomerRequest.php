@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CustomerRequest extends FormRequest
 {
@@ -13,10 +14,17 @@ class CustomerRequest extends FormRequest
 
     public function rules(): array
     {
+        $customerId = $this->route('customer')?->id;
+
         return [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('customers', 'email')->ignore($customerId),
+            ],
             'phone' => 'nullable|string|max:20',
             'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
@@ -27,6 +35,13 @@ class CustomerRequest extends FormRequest
             'vat_number' => 'nullable|string|max:20',
             'notes' => 'nullable|string|max:2000',
             'customer_type' => 'nullable|in:individual,business',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.unique' => 'This email address is already being used by another customer.',
         ];
     }
 }
